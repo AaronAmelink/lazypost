@@ -14,7 +14,14 @@ fn main() -> std::io::Result<()> {
         SidebarItem::new_http("Update User".to_string(), RequestType::Put),
         SidebarItem::new_http("Delete User".to_string(), RequestType::Delete),
         SidebarItem::new_http("Get Posts".to_string(), RequestType::Get),
-        SidebarItem::new_folder("name".to_string())
+        SidebarItem::new_folder("name".to_string(), vec![
+            SidebarItem::new_folder("Nested Folder".to_string(), vec![
+                SidebarItem::new_http("Delete User".to_string(), RequestType::Delete),
+            ]),
+            SidebarItem::new_folder("Nested Folder".to_string(), vec![
+                SidebarItem::new_http("Delete User".to_string(), RequestType::Delete),
+            ]),
+        ])
     ]);
 
     ratatui::run(|terminal| -> Result<(), std::io::Error> {
