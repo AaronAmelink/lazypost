@@ -1,0 +1,92 @@
+{
+  "items": [
+    {
+      "kind": "Request",
+      "name": "Get Users",
+      "request_type": "Get",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Request",
+      "name": "Create User",
+      "request_type": "Post",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Request",
+      "name": "Update User",
+      "request_type": "Put",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Request",
+      "name": "Delete User",
+      "request_type": "Delete",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Request",
+      "name": "Get Posts",
+      "request_type": "Get",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Folder",
+      "name": "name",
+      "items": [
+        {
+          "kind": "Folder",
+          "name": "Nested Folder",
+          "items": [
+            {
+              "kind": "Request",
+              "name": "Delete User",
+              "request_type": "Delete",
+              "url": "",
+              "headers": null,
+              "body": null,
+              "auth": null,
+              "params": null
+            }
+          ]
+        },
+        {
+          "kind": "Folder",
+          "name": "Nested Folder",
+          "items": [
+            {
+              "kind": "Request",
+              "name": "Delete User",
+              "request_type": "Delete",
+              "url": "",
+              "headers": null,
+              "body": null,
+              "auth": null,
+              "params": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

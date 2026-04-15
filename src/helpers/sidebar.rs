@@ -5,7 +5,7 @@ use ratatui::{
     widgets::Widget,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum RequestType {
     Get,
     Post,
@@ -33,15 +33,64 @@ impl RequestType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HTTPSidebarItem {
     pub label: RequestType,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FolderSidebarItem {
-    pub sub_items: Vec<SidebarItem>,
+    pub items: Vec<SidebarItem>,
     pub open: bool,
+}
+
+pub trait Folder {
+    fn items(&self) -> &Vec<SidebarItem>;
+    fn items_mut(&mut self) -> &mut Vec<SidebarItem>;
+
+    fn add_item(&mut self, path: Vec<usize>, item: SidebarItem) -> Result<(), &str> {
+        if path.len() == 1 {
+            if self.items().iter().any(|i| i.name == item.name && i.item_type == item.item_type) {
+                return Err("Item with the same type and name already exists");
+            }
+            self.items_mut().push(item);
+            Ok(())
+        } else {
+            if path[0] >= self.items().len() {
+                return Err("Path out of bounds");
+            }
+            match &self.items()[path[0]].item_type {
+                SidebarItemType::Folder(_) => {
+                    if let SidebarItemType::Folder(folder) = &mut self.items_mut()[path[0]].item_type {
+                        folder.add_item(path[1..].to_vec(), item)
+                    } else {
+                        unreachable!()
+                    }
+                }
+                SidebarItemType::HTTP(_) => {
+                    self.items_mut().insert(path[0] + 1, item);
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn remove_item(&mut self, path: &[usize]) -> Result<(), &'static str> {
+        if path.len() == 1 {
+            self.items_mut().remove(path[0]);
+            Ok(())
+        } else {
+            let first = path[0];
+            if first >= self.items().len() {
+                return Err("Path out of bounds");
+            }
+            if let SidebarItemType::Folder(folder) = &mut self.items_mut()[first].item_type {
+                folder.remove_item(&path[1..])
+            } else {
+                Err("Path out of bounds")
+            }
+        }
+    }
 }
 
 impl FolderSidebarItem {
@@ -51,20 +100,30 @@ impl FolderSidebarItem {
 
     fn get_height(&self) -> u16 {
         if self.open {
-            1 + self.sub_items.iter().map(|i| i.get_height()).sum::<u16>()
+            1 + self.items().iter().map(|i| i.get_height()).sum::<u16>()
         } else {
             1
         }
     }
 }
 
-#[derive(Clone)]
+impl Folder for FolderSidebarItem {
+    fn items(&self) -> &Vec<SidebarItem> {
+        &self.items
+    }
+
+    fn items_mut(&mut self) -> &mut Vec<SidebarItem> {
+        &mut self.items
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum SidebarItemType {
     HTTP(HTTPSidebarItem),
     Folder(FolderSidebarItem),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SidebarItem {
     pub name: String,
     pub item_type: SidebarItemType,
@@ -75,7 +134,7 @@ impl SidebarItem {
         Self {
             name,
             item_type: SidebarItemType::Folder(FolderSidebarItem {
-                sub_items,
+                items: sub_items,
                 open: false,
             }),
         }
@@ -156,7 +215,7 @@ impl SidebarItem {
 
                 if folder.open {
                     let mut y = area.y + 1;
-                    for (i, item) in folder.sub_items.iter().enumerate() {
+                    for (i, item) in folder.items.iter().enumerate() {
                         let child_is_selected =
                             selected_child_path.first() == Some(&i)
                             && selected_child_path.len() == 1;
@@ -180,7 +239,7 @@ impl SidebarItem {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Sidebar {
     pub selected_path: Vec<usize>,
     pub items: Vec<SidebarItem>,
@@ -221,7 +280,52 @@ impl Sidebar {
     pub fn activate(&mut self) {
         activate_at(&mut self.items, &self.selected_path);
     }
+
+    pub fn remove_selected(&mut self) -> Result<(), &'static str> {
+        let path = self.selected_path.clone();
+        self.remove_item(&path)?;
+        self.fix_selected_path();
+        Ok(())
+    }
+
+    fn fix_selected_path(&mut self) {
+        let mut items: &[SidebarItem] = &self.items;
+        let mut valid_len = 0;
+
+        for (depth, &idx) in self.selected_path.clone().iter().enumerate() {
+            if items.is_empty() {
+                // Parent folder is now empty — stop here, select the parent
+                break;
+            }
+            let clamped = idx.min(items.len() - 1);
+            self.selected_path[depth] = clamped;
+            valid_len = depth + 1;
+
+            match &items[clamped].item_type {
+                SidebarItemType::Folder(f) if f.open => items = &f.items,
+                _ => break,
+            }
+        }
+
+        self.selected_path.truncate(valid_len);
+
+        // Final safety: if the root list is empty, clear the path entirely
+        if self.items.is_empty() {
+            self.selected_path.clear();
+        }
+    }
 }
+
+impl Folder for Sidebar {
+    fn items(&self) -> &Vec<SidebarItem> {
+        &self.items
+    }
+
+    fn items_mut(&mut self) -> &mut Vec<SidebarItem> {
+        &mut self.items
+    }
+}
+
 
 fn collect_visible_paths(items: &[SidebarItem], prefix: &[usize], out: &mut Vec<Vec<usize>>) {
     for (i, item) in items.iter().enumerate() {
@@ -231,7 +335,7 @@ fn collect_visible_paths(items: &[SidebarItem], prefix: &[usize], out: &mut Vec<
 
         if let SidebarItemType::Folder(ref folder) = item.item_type {
             if folder.open {
-                collect_visible_paths(&folder.sub_items, &path, out);
+                collect_visible_paths(&folder.items, &path, out);
             }
         }
     }
@@ -246,7 +350,7 @@ fn activate_at(items: &mut [SidebarItem], path: &[usize]) {
         if tail.is_empty() {
             item.activate();
         } else if let SidebarItemType::Folder(ref mut folder) = item.item_type {
-            activate_at(&mut folder.sub_items, tail);
+            activate_at(&mut folder.items, tail);
         }
     }
 }
