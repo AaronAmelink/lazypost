@@ -143,6 +143,59 @@ pub fn config_item_to_sidebar(item: &Item) -> SidebarItem {
     }
 }
 
+fn merge_sidebar_with_config(sidebar_items: &[SidebarItem], config_items: &[Item]) -> Vec<Item> {
+    sidebar_items.iter().map(|si| {
+        match &si.item_type {
+            SidebarItemType::HTTP(http) => {
+                // Try to find matching request in config by name
+                if let Some(existing) = config_items.iter().find(|ci| {
+                    if let Item::Request(req) = ci {
+                        req.name == si.name
+                    } else {
+                        false
+                    }
+                }) {
+                    // Keep the existing request with all its data
+                    existing.clone()
+                } else {
+                    // Create new request from sidebar item
+                    Item::Request(Request {
+                        name: si.name.clone(),
+                        request_type: http.label.clone(),
+                        url: String::new(),
+                        headers: None,
+                        body: None,
+                        auth: None,
+                        params: None,
+                    })
+                }
+            }
+            SidebarItemType::Folder(folder) => {
+                // Try to find matching folder in config by name
+                if let Some(Item::Folder(existing_folder)) = config_items.iter().find(|ci| {
+                    if let Item::Folder(f) = ci {
+                        f.name == si.name
+                    } else {
+                        false
+                    }
+                }) {
+                    // Recursively merge folder contents, preserving config data
+                    Item::Folder(ConfigFolder {
+                        name: si.name.clone(),
+                        items: merge_sidebar_with_config(&folder.items, &existing_folder.items),
+                    })
+                } else {
+                    // Create new folder from sidebar item
+                    Item::Folder(ConfigFolder {
+                        name: si.name.clone(),
+                        items: merge_sidebar_with_config(&folder.items, &[]),
+                    })
+                }
+            }
+        }
+    }).collect()
+}
+
 
 #[derive(Debug)]
 pub struct WorkspaceConfig {
@@ -173,6 +226,38 @@ impl WorkspaceConfig {
         Ok(cfg)
     }
 
+    pub fn remove_at_path(&mut self, path: Vec<usize>) -> Result<(), &'static str> {
+        Self::remove_from_items(&mut self.data.items, &path)
+    }
+
+    fn remove_from_items(items: &mut Vec<Item>, path: &[usize]) -> Result<(), &'static str> {
+        if path.is_empty() {
+            return Err("Path is empty");
+        }
+
+        if path.len() == 1 {
+            if path[0] >= items.len() {
+                return Err("Path out of bounds");
+            }
+            items.remove(path[0]);
+            Ok(())
+        } else {
+            let first = path[0];
+            if first >= items.len() {
+                return Err("Path out of bounds");
+            }
+
+            match &mut items[first] {
+                Item::Folder(folder) => {
+                    Self::remove_from_items(&mut folder.items, &path[1..])
+                }
+                Item::Request(_) => {
+                    Err("Path out of bounds")
+                }
+            }
+        }
+    }
+
     pub fn save(&self) -> std::io::Result<()> {
         if let Some(parent) = self.path.parent() {
             fs::create_dir_all(parent)?;
@@ -183,7 +268,7 @@ impl WorkspaceConfig {
     }
 
     pub fn sync_from_sidebar(&mut self, items: &[SidebarItem]) -> std::io::Result<()> {
-        self.data.items = items.iter().map(sidebar_item_to_config).collect();
+        self.data.items = merge_sidebar_with_config(items, &self.data.items);
         self.save()
     }
 
