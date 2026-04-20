@@ -1,11 +1,12 @@
 use std::collections::HashSet;
+use crate::helpers::items::Item;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
     widgets::Widget,
 };
-use crate::helpers::workspace_config::{Item, WorkspaceConfig};
+use crate::helpers::workspace_config::{WorkspaceConfig};
 
 impl Item {
     fn render_at(
