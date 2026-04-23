@@ -5,8 +5,7 @@ use ratatui::widgets::Block;
 use helpers::sidebar::Sidebar;
 use helpers::items::{Item, RequestType, Request, ConfigFolder};
 use helpers::workspace_config::{WorkspaceConfig};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::Path;
 
 use crate::helpers::add_item_widget::AddItemWidget;
 
@@ -36,15 +35,19 @@ impl App {
             if !widget.is_open {
                 self.add_item_widget = None;
             }
+        } else {
+            self.sidebar.handle_event(event)?;
         }
 
         match key.code {
             KeyCode::Char('N') => {
                 self.add_item_widget = Some(AddItemWidget::new());
             },
+            KeyCode::Char('q') => {
+                return Ok(false);
+            },
             _ => {}
         }
-
         return Ok(true);
     }
 }
@@ -82,21 +85,22 @@ fn default_items() -> Vec<Item> {
     ]
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let mut app = App::new();
-    app.config = WorkspaceConfig::create_from_file(Path::new(CONFIG_PATH))?;
+    app.config = WorkspaceConfig::create_from_file(Path::new(CONFIG_PATH)).unwrap_or_else(|_| WorkspaceConfig::new_empty());
 
     if app.config.data.items.is_empty() {
         app.config.data.items = default_items();
-        app.config.save()?;
+        let _ = app.config.save();
     }
     ratatui::run(|terminal| loop {
-        terminal.draw(|frame| render(frame, &mut app))?;
-        if handle_events(&mut app)? {
-            break Ok(());
+        let _ = terminal.draw(|frame| render(frame, &mut app));
+        if !handle_events(&mut app).unwrap_or(false) {
+            break;
         }
-    })
+    });
 }
+
 
 
 fn render(frame: &mut ratatui::Frame, app: &mut App) {
@@ -113,43 +117,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     }
 }
 
-fn handle_events(app: &mut App) -> std::io::Result<bool> {
-    let event = event::read()?;
-    let Event::Key(key) = event else { return Ok(false) };
-    if key.kind != KeyEventKind::Press { return Ok(false); }
-
-    if app.handle_events(&event).is_err() {
-        return Ok(false);
-    }
-
-    match key.code {
-        KeyCode::Char('q') => return Ok(true),
-        KeyCode::Char('j') => app.sidebar.select_next(),
-        KeyCode::Char('k') => app.sidebar.select_prev(),
-        KeyCode::Enter => app.sidebar.toggle_selected(),
-
-        KeyCode::Char('n') => {
-            let new_item = Item::Request(Request {
-                name: "New Request".into(),
-                request_type: RequestType::Get,
-                url: String::new(),
-                headers: None,
-                body: None,
-                auth: None,
-                params: None,
-            });
-            if app.sidebar.add_item(app.sidebar.selected_path.clone(), new_item).is_ok() {
-                WorkspaceConfig::save_items_to_file(app.sidebar.items.clone(), &Path::new(CONFIG_PATH))?;
-            }
-        }
-
-        KeyCode::Char('d') => {
-            if app.sidebar.remove_selected().is_ok() {
-                WorkspaceConfig::save_items_to_file(app.sidebar.items.clone(), &Path::new(CONFIG_PATH))?;
-            }
-        }
-        _ => {}
-    }
-
-    Ok(false)
+fn handle_events(app: &mut App) -> Result<bool, &str> {
+    let event = event::read().map_err(|_| "Error reading event")?;
+    app.handle_events(&event)
 }

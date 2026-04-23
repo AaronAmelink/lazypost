@@ -10,6 +10,7 @@ pub enum RequestType {
     Post,
     Put,
     Delete,
+    Patch,
 }
 
 impl RequestType {
@@ -19,6 +20,7 @@ impl RequestType {
             RequestType::Post => "POST",
             RequestType::Put => "PUT",
             RequestType::Delete => "DELETE",
+            RequestType::Patch => "PATCH",
         }
     }
 
@@ -28,6 +30,7 @@ impl RequestType {
             RequestType::Post => Color::Green,
             RequestType::Put => Color::Yellow,
             RequestType::Delete => Color::Red,
+            RequestType::Patch => Color::Cyan,
         }
     }
 }

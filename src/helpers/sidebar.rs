@@ -1,5 +1,6 @@
-use std::collections::HashSet;
-use crate::helpers::items::Item;
+use std::{collections::HashSet, path::Path};
+use crate::{CONFIG_PATH, helpers::items::Item};
+use crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -109,6 +110,25 @@ impl Sidebar {
             open_folders: HashSet::new(),
             items,
         }
+    }
+
+    pub fn handle_event(&mut self, event: &Event) -> Result<bool, &str> {
+        let Event::Key(key) = event else { return Err("Error") };
+        if key.kind != KeyEventKind::Press { return Err("Error") };
+
+        match key.code {
+            KeyCode::Char('q') => return Ok(true),
+            KeyCode::Char('j') => self.select_next(),
+            KeyCode::Char('k') => self.select_prev(),
+            KeyCode::Enter => self.toggle_selected(),
+            KeyCode::Char('d') => {
+                if self.remove_selected().is_ok() {
+                    let _ = WorkspaceConfig::save_items_to_file(self.items.clone(), &Path::new(CONFIG_PATH));
+                }
+            }
+            _ => {}
+        }
+        return Ok(true);
     }
 
     pub fn select_next(&mut self) {

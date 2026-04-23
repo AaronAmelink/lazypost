@@ -1,6 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
-use ratatui::style::{Color, Style, Stylize};
+use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph, Tabs as TabsWidget};
 use ratatui::{symbols, Frame};
@@ -62,13 +62,15 @@ impl AddItemWidget {
         self.current_tab = (self.current_tab + Tabs::get_tabs().len() - 1) % Tabs::get_tabs().len();
     }
 
-    pub fn handle_event(&mut self, event: &Event) -> bool {
+    pub fn handle_event(&mut self, event: &Event) -> Result<bool, &str> {
+        let Event::Key(key) = event else { return Err("Error") };
+        if key.kind != KeyEventKind::Press { return Err("Error") };
         self.name_input.handle_event(event);
 
         match event {
             Event::Key(key_event) => {
                 if key_event.kind != KeyEventKind::Press {
-                    return false;
+                    return Ok(false);
                 }
 
                 match key_event.code {
@@ -78,16 +80,16 @@ impl AddItemWidget {
                         } else {
                             self.next_tab();
                         }
-                        return true;
+                        return Ok(true);
                     }
                     KeyCode::BackTab => {
                         self.prev_tab();
-                        return true;
+                        return Ok(true);
                     }
                     KeyCode::Char('e') => {
                         self.name_input.enable();
                         self.selected_input = Some(SelectedInput::Name);
-                        return true;
+                        return Ok(true);
                     }
                     KeyCode::Esc => {
                         if let Some(_selected_input) = &self.selected_input {
@@ -96,7 +98,7 @@ impl AddItemWidget {
                         } else {
                             self.is_open = false;
                         }
-                        return true;
+                        return Ok(true);
                     }
                     _ => {}
                 }
@@ -104,7 +106,7 @@ impl AddItemWidget {
             _ => {}
         }
 
-        false
+        Ok(true)
     }
 
 
@@ -174,15 +176,6 @@ impl AddItemWidget {
 
         self.name_input.render(frame, areas[1]);
 
-        let body_title = match current_tab {
-            Tabs::Info => "Info",
-            Tabs::Request => "Request",
-        };
-        frame.render_widget(
-            Paragraph::new(Line::from(format!("Tab: {body_title}")).alignment(Alignment::Center))
-                .block(Block::bordered()),
-            areas[2],
-        );
     }
 
 }

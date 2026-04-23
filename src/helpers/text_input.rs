@@ -1,5 +1,5 @@
 use ratatui::{
-    Frame, crossterm::event::{Event, KeyCode, KeyEvent}, style::{Color, Style}, widgets::{Block, BorderType, Paragraph}
+    Frame, crossterm::event::Event, style::{Color, Style}, widgets::{Block, BorderType, Paragraph}
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
