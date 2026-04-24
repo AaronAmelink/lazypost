@@ -341,7 +341,6 @@ impl AddItemWidget {
                     self.next_tab();
                 }
             }
-            KeyCode::BackTab => self.prev_tab(),
 
             KeyCode::Char('j') | KeyCode::Down  => self.move_focus_down(),
             KeyCode::Char('k') | KeyCode::Up    => self.move_focus_up(),
@@ -360,17 +359,20 @@ impl AddItemWidget {
                 }
             }
 
-            KeyCode::Char('l') | KeyCode::Right
-                if self.focused == Some(FocusId::MethodSelector) =>
-            {
-                self.method_index = (self.method_index + 1) % METHODS.len();
+            KeyCode::Char('l') | KeyCode::Right => {
+                if self.focused == Some(FocusId::MethodSelector) {
+                    self.method_index = (self.method_index + 1) % METHODS.len();
+                } else {
+                    self.next_tab();
+                }
             }
-            KeyCode::Char('h') | KeyCode::Left
-                if self.focused == Some(FocusId::MethodSelector) =>
-            {
-                self.method_index = (self.method_index + METHODS.len() - 1) % METHODS.len();
+            KeyCode::Char('h') | KeyCode::Left => {
+                if self.focused == Some(FocusId::MethodSelector) {
+                    self.method_index = (self.method_index + METHODS.len() - 1) % METHODS.len();
+                } else {
+                    self.prev_tab();
+                }
             }
-
             KeyCode::Char('d') => {
                 if let Some(FocusId::Param(idx, _)) = self.focused {
                     self.param_inputs.remove(idx);
@@ -436,7 +438,7 @@ impl AddItemWidget {
         } else if self.current_tab == Tab::Params as usize || self.current_tab == Tab::Headers as usize {
             "a: add param/header  d: delete"
         } else {
-            "j/k: navigate  e: edit  Tab: switch tab  Enter: add  Esc: close"
+            "h/j/k/l: navigate  e: edit  Enter: add  Esc: close"
         };
         let footer_y = modal_area.y + modal_area.height.saturating_sub(2);
         frame.render_widget(

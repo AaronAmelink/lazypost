@@ -51,7 +51,7 @@ impl App {
 
         // Global keys (only when the modal is closed)
         match key.code {
-            KeyCode::Char('N') => {
+            KeyCode::Char('n') => {
                 self.add_item_widget = Some(AddItemWidget::new());
             }
             KeyCode::Char('q') => {
