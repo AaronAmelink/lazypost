@@ -8,7 +8,7 @@ use tui_input::Input;
 pub struct TextInput {
     input: Input,
     enabled: bool,
-    title: String,
+    pub title: String,
 }
 
 impl TextInput {
@@ -62,7 +62,7 @@ impl TextInput {
         }
 
         match event {
-            Event::Key(key_event) => {
+            Event::Key(_key_event) => {
 
                 self.input.handle_event(event);
                 true

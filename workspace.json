@@ -32,6 +32,38 @@
     },
     {
       "kind": "Request",
+      "name": "name something new",
+      "request_type": "Patch",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
+      "kind": "Request",
+      "name": "name",
+      "request_type": "Get",
+      "url": "url.com",
+      "headers": null,
+      "body": {
+        "type": "Raw",
+        "content": "\"key\": {\"value\"};"
+      },
+      "auth": {
+        "type": "Bearer",
+        "token": "123"
+      },
+      "params": [
+        {
+          "key": "one",
+          "value": "two",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "kind": "Request",
       "name": "Delete User",
       "request_type": "Delete",
       "url": "",
@@ -41,9 +73,52 @@
       "params": null
     },
     {
+      "kind": "Request",
+      "name": "Get Posts",
+      "request_type": "Get",
+      "url": "",
+      "headers": null,
+      "body": null,
+      "auth": null,
+      "params": null
+    },
+    {
       "kind": "Folder",
-      "name": "name",
-      "items": []
+      "name": "User Actions",
+      "items": [
+        {
+          "kind": "Folder",
+          "name": "Nested Folder",
+          "items": [
+            {
+              "kind": "Request",
+              "name": "Delete User",
+              "request_type": "Delete",
+              "url": "",
+              "headers": null,
+              "body": null,
+              "auth": null,
+              "params": null
+            }
+          ]
+        },
+        {
+          "kind": "Folder",
+          "name": "Another Nested",
+          "items": [
+            {
+              "kind": "Request",
+              "name": "Delete User",
+              "request_type": "Delete",
+              "url": "",
+              "headers": null,
+              "body": null,
+              "auth": null,
+              "params": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -31,24 +31,37 @@ impl App {
         if key.kind != KeyEventKind::Press { return Err("Error") }
 
         if let Some(widget) = &mut self.add_item_widget {
-            widget.handle_event(event);
+            widget.handle_event(event)?;
+
             if !widget.is_open {
+                let finished = widget.finished_item.take();
                 self.add_item_widget = None;
+
+                if let Some(item) = finished {
+                    let insert_path = self.sidebar.selected_path.clone();
+                    let _ = self.sidebar.add_item(insert_path, item);
+                    let _ = WorkspaceConfig::save_items_to_file(
+                        self.sidebar.items.clone(),
+                        Path::new(CONFIG_PATH),
+                    );
+                }
             }
-        } else {
-            self.sidebar.handle_event(event)?;
+            return Ok(true);
         }
 
+        // Global keys (only when the modal is closed)
         match key.code {
             KeyCode::Char('N') => {
                 self.add_item_widget = Some(AddItemWidget::new());
-            },
+            }
             KeyCode::Char('q') => {
                 return Ok(false);
-            },
-            _ => {}
+            }
+            _ => {
+                self.sidebar.handle_event(event)?;
+            }
         }
-        return Ok(true);
+        Ok(true)
     }
 }
 
@@ -87,12 +100,14 @@ fn default_items() -> Vec<Item> {
 
 fn main() {
     let mut app = App::new();
-    app.config = WorkspaceConfig::create_from_file(Path::new(CONFIG_PATH)).unwrap_or_else(|_| WorkspaceConfig::new_empty());
+    app.config = WorkspaceConfig::create_from_file(Path::new(CONFIG_PATH))
+        .unwrap_or_else(|_| WorkspaceConfig::new_empty());
 
     if app.config.data.items.is_empty() {
         app.config.data.items = default_items();
         let _ = app.config.save();
     }
+
     ratatui::run(|terminal| loop {
         let _ = terminal.draw(|frame| render(frame, &mut app));
         if !handle_events(&mut app).unwrap_or(false) {
@@ -101,16 +116,16 @@ fn main() {
     });
 }
 
-
-
 fn render(frame: &mut ratatui::Frame, app: &mut App) {
-    let [left, right] = Layout::horizontal([Constraint::Fill(1); 2]).areas(frame.area());
-    let [top_right, bottom_right] = Layout::vertical([Constraint::Fill(1); 2]).areas(right);
+    let [left, middle, right] = Layout::horizontal([Constraint::Percentage(33), Constraint::Percentage(33), Constraint::Percentage(34)]).areas(frame.area());
 
     frame.render_widget(Block::bordered().title("Endpoints"), left);
-    frame.render_widget(app.sidebar.clone(), left.inner(Margin { vertical: 1, horizontal: 1 }));
-    frame.render_widget(Block::bordered().title("Request"), top_right);
-    frame.render_widget(Block::bordered().title("Response"), bottom_right);
+    frame.render_widget(
+        app.sidebar.clone(),
+        left.inner(Margin { vertical: 1, horizontal: 1 }),
+    );
+    frame.render_widget(Block::bordered().title("Request"), middle);
+    frame.render_widget(Block::bordered().title("Response"), right);
 
     if let Some(widget) = &mut app.add_item_widget {
         widget.render_modal(frame, frame.area());
