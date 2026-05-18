@@ -1293,6 +1293,56 @@ impl RequestEditor {
                     self.focused == Some(FocusId::AuthApiKeyLocation),
                 );
             }
+            AuthKind::OAuth2 => {
+                self.render_kind_selector(
+                    frame,
+                    chunks[1],
+                    " Grant Type (e/h/l) ",
+                    OAUTH2_GRANTS
+                        .iter()
+                        .map(oauth2_grant_label)
+                        .collect(),
+                    self.oauth2_grant_index,
+                    self.focused == Some(FocusId::AuthOAuth2Grant),
+                );
+                Self::render_input(
+                    frame,
+                    chunks[2],
+                    &self.oauth2_client_id,
+                    self.focused == Some(FocusId::AuthOAuth2ClientId),
+                    self.editing,
+                );
+                Self::render_input(
+                    frame,
+                    chunks[3],
+                    &self.oauth2_client_secret,
+                    self.focused == Some(FocusId::AuthOAuth2ClientSecret),
+                    self.editing,
+                );
+                Self::render_input(
+                    frame,
+                    chunks[4],
+                    &self.oauth2_token_url,
+                    self.focused == Some(FocusId::AuthOAuth2TokenUrl),
+                    self.editing,
+                );
+                Self::render_input(
+                    frame,
+                    chunks[5],
+                    &self.oauth2_scopes,
+                    self.focused == Some(FocusId::AuthOAuth2Scopes),
+                    self.editing,
+                );
+                if OAUTH2_GRANTS[self.oauth2_grant_index] == OAuth2Grant::RefreshToken {
+                    Self::render_input(
+                        frame,
+                        chunks[6],
+                        &self.oauth2_refresh_token,
+                        self.focused == Some(FocusId::AuthOAuth2RefreshToken),
+                        self.editing,
+                    );
+                }
+            }
         }
     }
 
