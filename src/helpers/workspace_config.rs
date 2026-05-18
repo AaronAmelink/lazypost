@@ -1,10 +1,13 @@
-use std::{path::{Path, PathBuf}};
-use serde::{Serialize, Deserialize};
+use crate::helpers::items::Item;
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::BufReader;
-use crate::helpers::items::Item;
+use std::path::{Path, PathBuf};
 
-
+/// On-disk format for `workspace.json`. Contains the request tree only.
+/// Environment variables live in `env.json` so secrets don't end up committed.
+/// Unknown fields in older workspace files (e.g. legacy `environments`) are
+/// silently ignored by serde.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceFile {
     pub items: Vec<Item>,
@@ -39,7 +42,10 @@ impl WorkspaceConfig {
             WorkspaceFile::empty()
         };
 
-        let cfg = Self { data, path: path.to_path_buf() };
+        let cfg = Self {
+            data,
+            path: path.to_path_buf(),
+        };
 
         if !path.exists() {
             cfg.save()?;
@@ -48,29 +54,26 @@ impl WorkspaceConfig {
         Ok(cfg)
     }
 
-    pub fn create_from_items(items: Vec<Item>, path: &Path) -> Self {
-            Self {
-                data: WorkspaceFile { items },
-                path: path.to_path_buf(),
-            }
-        }
-
-
     pub fn save_items_to_file(items: Vec<Item>, path: &Path) -> std::io::Result<()> {
-        let workspace_items = Self::create_from_items(items, path);
-        workspace_items.save()
+        let cfg = Self {
+            data: WorkspaceFile { items },
+            path: path.to_path_buf(),
+        };
+        cfg.save()
     }
 
     pub fn save(&self) -> std::io::Result<()> {
         if let Some(parent) = self.path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let json = serde_json::to_string_pretty(&self.data)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let json = serde_json::to_string_pretty(&self.data).map_err(std::io::Error::other)?;
         fs::write(&self.path, json)
     }
 
-    pub(crate) fn remove_from_items(items: &mut Vec<Item>, path: &[usize]) -> Result<(), &'static str> {
+    pub(crate) fn remove_from_items(
+        items: &mut Vec<Item>,
+        path: &[usize],
+    ) -> Result<(), &'static str> {
         if path.is_empty() {
             return Err("Path is empty");
         }
