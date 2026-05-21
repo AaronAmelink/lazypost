@@ -63,6 +63,8 @@ pub struct Request {
     pub body: Option<RequestBody>,
     pub auth: Option<Auth>,
     pub params: Option<Vec<QueryParam>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url_vars: Option<Vec<QueryParam>>,
     /// JSON template with `%var_name%` placeholders. After a successful response,
     /// the template is walked in parallel with the actual response body; any
     /// placeholders capture the matching JSON value into the active environment.

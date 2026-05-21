@@ -71,7 +71,7 @@ Header:  Authorization: Bearer {{token}}
 Body:    {"id": "{{user_id}}"}
 ```
 
-Missing variables expand to the empty string — they don't error.
+Missing or empty variables cause a request error.
 
 ```
 j / k            navigate fields
@@ -80,6 +80,12 @@ a / d            add / delete a variable row
 Enter            save and close
 Esc              cancel
 ```
+
+## URL variables
+
+On the **URL Vars** tab, define key/value pairs and reference them in the URL as
+`<key>`. Whitespace inside the brackets is allowed (`< key >`). Values are
+URL-encoded when inserted. Missing or empty URL vars cause a request error.
 
 ## Capture templates ("predicted response")
 

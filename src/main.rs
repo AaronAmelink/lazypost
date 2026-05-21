@@ -446,6 +446,7 @@ fn default_items() -> Vec<Item> {
             body: None,
             auth: None,
             params: None,
+            url_vars: None,
             capture: None,
         })
     };

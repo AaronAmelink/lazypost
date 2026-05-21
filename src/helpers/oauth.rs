@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::helpers::env::substitute;
+use crate::helpers::env::substitute_required;
 use crate::helpers::items::{OAuth2Config, OAuth2Grant};
 
 #[derive(Debug, Clone)]
@@ -60,15 +60,21 @@ pub async fn fetch_token(
     config: &OAuth2Config,
     vars: &HashMap<String, String>,
 ) -> Result<String, OAuth2Error> {
-    let client_id = substitute(&config.client_id, vars);
-    let client_secret = substitute(&config.client_secret, vars);
-    let token_url = substitute(&config.token_url, vars);
-    let scope = config
-        .scopes
-        .iter()
-        .map(|s| substitute(s, vars))
-        .collect::<Vec<_>>()
-        .join(" ");
+    let client_id = substitute_required(&config.client_id, vars)
+        .map_err(|e| OAuth2Error(format!("client_id: {e}")))?;
+    let client_secret = substitute_required(&config.client_secret, vars)
+        .map_err(|e| OAuth2Error(format!("client_secret: {e}")))?;
+    let token_url = substitute_required(&config.token_url, vars)
+        .map_err(|e| OAuth2Error(format!("token_url: {e}")))?;
+    let mut scopes: Vec<String> = Vec::new();
+    for s in &config.scopes {
+        let s = substitute_required(s, vars)
+            .map_err(|e| OAuth2Error(format!("scope: {e}")))?;
+        if !s.is_empty() {
+            scopes.push(s);
+        }
+    }
+    let scope = scopes.join(" ");
 
     if token_url.trim().is_empty() {
         return Err(OAuth2Error("OAuth2 token_url is empty".into()));
@@ -90,7 +96,9 @@ pub async fn fetch_token(
             let rt = config
                 .refresh_token
                 .as_ref()
-                .map(|s| substitute(s, vars))
+                .map(|s| substitute_required(s, vars))
+                .transpose()
+                .map_err(|e| OAuth2Error(format!("refresh_token: {e}")))?
                 .unwrap_or_default();
             if rt.trim().is_empty() {
                 return Err(OAuth2Error(

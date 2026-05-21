@@ -1040,6 +1040,7 @@ dependencies = [
  "chrono",
  "crossterm",
  "once_cell",
+ "percent-encoding",
  "ratatui",
  "ratatui-textarea",
  "regex",

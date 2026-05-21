@@ -120,7 +120,7 @@ impl HelpOverlay {
         kv(
             &mut lines,
             "[ / ]",
-            "Cycle sub-tabs (Info / Auth / Body / Params / Headers / Capture)",
+            "Cycle sub-tabs (Info / Auth / Body / Params / URL Vars / Headers / Capture)",
         );
         kv(
             &mut lines,
@@ -131,18 +131,18 @@ impl HelpOverlay {
         kv(
             &mut lines,
             "h / l",
-            "Cycle the value under selectors (method, body type, auth type, location)",
+            "Move between columns or cycle selector values",
         );
         kv(
             &mut lines,
             "a",
-            "Add a row (Params / Headers / Form / Multipart)",
+            "Add a row (Params / URL Vars / Headers / Form / Multipart)",
         );
         kv(&mut lines, "d", "Delete the focused row");
         kv(
             &mut lines,
             "t",
-            "Toggle: param enabled, or multipart text/file",
+            "Toggle: param/url-var enabled, or multipart text/file",
         );
         kv(
             &mut lines,
@@ -180,7 +180,7 @@ impl HelpOverlay {
         para(
             &mut lines,
             "Anywhere in url / headers / params / body / auth fields, write {{var_name}} to \
-             substitute a variable. Missing vars expand to an empty string. Open the editor \
+             substitute a variable. Missing or empty vars are errors. Open the editor \
              with E to define variables.",
         );
         para(
@@ -188,6 +188,15 @@ impl HelpOverlay {
             "Example: with base_url=https://api.example.com and token=abc, a request to \
              {{base_url}}/users with header Authorization: Bearer {{token}} sends to \
              https://api.example.com/users with the real token.",
+        );
+        blank(&mut lines);
+
+        section(&mut lines, "URL variables");
+        para(
+            &mut lines,
+            "On the URL Vars tab, define key/value pairs and reference them in the URL as \
+             <key>. Whitespace inside the brackets is allowed (< key >). Values are URL-encoded. \
+             Missing or empty URL vars are errors.",
         );
         blank(&mut lines);
 
