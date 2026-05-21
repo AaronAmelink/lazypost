@@ -1,18 +1,22 @@
-mod helpers;
+mod model;
+mod net;
+mod config;
+mod logic;
+mod ui;
 use crossterm::event::{
     self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEventKind,
     KeyModifiers,
 };
-use helpers::env_config::EnvConfig;
-use helpers::environment_editor::EnvironmentEditor;
-use helpers::help_overlay::HelpOverlay;
-use helpers::history::{History, HistoryAction};
-use helpers::http_client::{self, ExecutedResponse, HttpError};
-use helpers::items::{ConfigFolder, Item, Request, RequestType};
-use helpers::request_editor::RequestEditor;
-use helpers::response_view::ResponseView;
-use helpers::sidebar::Sidebar;
-use helpers::workspace_config::WorkspaceConfig;
+use config::env_config::EnvConfig;
+use ui::environment_editor::EnvironmentEditor;
+use ui::help_overlay::HelpOverlay;
+use config::history::{History, HistoryAction};
+use net::http_client::{self, ExecutedResponse, HttpError};
+use model::items::{ConfigFolder, Item, Request, RequestType};
+use ui::request_editor::RequestEditor;
+use ui::response_view::ResponseView;
+use ui::sidebar::Sidebar;
+use config::workspace::WorkspaceConfig;
 use ratatui::layout::{Constraint, Layout, Margin};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
@@ -22,7 +26,7 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 
-use crate::helpers::add_item_widget::AddItemWidget;
+use crate::ui::add_item_widget::AddItemWidget;
 
 const CONFIG_PATH: &str = "workspace.json";
 const ENV_PATH: &str = "env.json";
@@ -159,7 +163,7 @@ impl App {
                 return;
             }
         };
-        let pairs = helpers::capture::extract_captures(&template, &actual);
+        let pairs = logic::capture::extract_captures(&template, &actual);
         if pairs.is_empty() {
             self.save_status = Some("capture: nothing matched".to_string());
             return;
@@ -232,7 +236,7 @@ impl App {
         };
         match editor.to_request() {
             Ok(req) => {
-                if helpers::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok()
+                if ui::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok()
                 {
                     let _ = WorkspaceConfig::save_items_to_file(
                         self.sidebar.items.clone(),
@@ -258,7 +262,7 @@ impl App {
             return;
         };
         if let Ok(req) = editor.to_request()
-            && helpers::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok()
+            && ui::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok()
         {
             let _ = WorkspaceConfig::save_items_to_file(
                 self.sidebar.items.clone(),
@@ -272,8 +276,8 @@ impl App {
     fn handle_events(&mut self, event: &Event) -> Result<bool, &'static str> {
         if matches!(event, Event::Paste(_)) {
             if let Some(widget) = &mut self.add_item_widget {
-                if widget.editor.is_editing() {
-                    widget.editor.handle_event(event);
+                if widget.is_editing() {
+                    widget.handle_event(event)?;
                     return Ok(true);
                 }
             }
@@ -444,7 +448,11 @@ impl App {
                 if let Some(editor) = self.current_editor.as_mut() {
                     let was_editing = editor.is_editing();
                     editor.handle_event(event);
-                    if was_editing && !editor.is_editing() {
+                    let now_editing = editor.is_editing();
+                    // Save after any structural change (method, auth type, tab, etc.)
+                    // and when exiting a text field. Don't save while actively typing
+                    // or the moment a text field is first opened.
+                    if was_editing || !now_editing {
                         self.save_current_editor_silent();
                     }
                 }
@@ -617,6 +625,14 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
         Style::default().fg(Color::Magenta),
     ));
     spans.push(Span::raw("  "));
+    if let Some(item) = &app.sidebar.clipboard {
+        let label = match item {
+            Item::Request(r) => format!("cut: \"{}\"", r.name),
+            Item::Folder(f) => format!("cut: \"{}\"", f.name),
+        };
+        spans.push(Span::styled(label, Style::default().fg(Color::Yellow)));
+        spans.push(Span::raw("  "));
+    }
     if let Some(status) = &app.save_status {
         spans.push(Span::styled(
             status.clone(),
@@ -624,8 +640,14 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
         ));
         spans.push(Span::raw("  "));
     }
+    let pane_hint = match app.focus_pane {
+        Pane::Sidebar => "j/k nav  x cut  p paste  d del  n new  Enter folder",
+        Pane::Editor  => "w save  s send  [/] tab  e edit  Esc stop",
+        Pane::Response => "j/k scroll  [/] body/headers",
+    };
+    spans.push(Span::styled(pane_hint, Style::default().fg(Color::DarkGray)));
     spans.push(Span::styled(
-        "Tab/1-3 panes  w save  s send  n new  E env  H history  ? help  q quit",
+        "   Tab/1-3 panes  E env  H history  ? help  q quit",
         Style::default().fg(Color::DarkGray),
     ));
     frame.render_widget(
@@ -649,7 +671,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
 
 fn pane_border_style(focused: bool) -> Style {
     if focused {
-        Style::default().fg(Color::Cyan)
+        Style::default().fg(Color::Green)
     } else {
         Style::default().fg(Color::DarkGray)
     }

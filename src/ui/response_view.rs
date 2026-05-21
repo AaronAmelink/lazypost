@@ -2,10 +2,11 @@ use crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, BorderType, Paragraph, Wrap};
 
-use crate::helpers::http_client::{ExecutedResponse, HttpError};
+use crate::net::http_client::{ExecutedResponse, HttpError};
+use crate::ui::json_highlight::highlight_json;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ResponseTab {
@@ -178,22 +179,26 @@ impl ResponseView {
         let inner = block.inner(body_area);
         frame.render_widget(block, body_area);
 
-        let text: String = match (resp, self.sub_tab) {
-            (None, _) => String::new(),
-            (Some(r), ResponseTab::Body) => self
-                .pretty_cache
-                .clone()
-                .unwrap_or_else(|| String::from_utf8_lossy(&r.body).to_string()),
-            (Some(r), ResponseTab::Headers) => r
-                .headers
-                .iter()
-                .map(|(k, v)| format!("{k}: {v}"))
-                .collect::<Vec<_>>()
-                .join("\n"),
+        let body_text: Text = match (resp, self.sub_tab) {
+            (None, _) => Text::default(),
+            (Some(r), ResponseTab::Body) => {
+                if let Some(json) = &self.pretty_cache {
+                    highlight_json(json)
+                } else {
+                    Text::raw(String::from_utf8_lossy(&r.body).to_string())
+                }
+            }
+            (Some(r), ResponseTab::Headers) => Text::raw(
+                r.headers
+                    .iter()
+                    .map(|(k, v)| format!("{k}: {v}"))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            ),
         };
 
         frame.render_widget(
-            Paragraph::new(text)
+            Paragraph::new(body_text)
                 .style(Style::default().fg(Color::White))
                 .wrap(Wrap { trim: false })
                 .scroll((self.scroll, 0))

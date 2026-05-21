@@ -6,7 +6,7 @@ use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
 
-use crate::helpers::text_input::TextInput;
+use crate::ui::kv_row::{KvRow, render_input};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Focus {
@@ -17,27 +17,20 @@ enum Focus {
 pub struct EnvironmentEditor {
     pub is_open: bool,
     pub finished: bool,
-    var_rows: Vec<(TextInput, TextInput)>,
+    var_rows: Vec<KvRow>,
     focused: Focus,
     editing: bool,
 }
 
 impl EnvironmentEditor {
     pub fn new(variables: HashMap<String, String>) -> Self {
-        let mut var_rows: Vec<(TextInput, TextInput)> = variables
+        let mut var_rows: Vec<KvRow> = variables
             .iter()
-            .map(|(k, v)| {
-                let mut ki = TextInput::new("Key");
-                let mut vi = TextInput::new("Value");
-                ki.set_value(k.clone());
-                vi.set_value(v.clone());
-                (ki, vi)
-            })
+            .map(|(k, v)| KvRow::from_pair(k, v, true))
             .collect();
-        // Stable display order: sort by key.
-        var_rows.sort_by(|a, b| a.0.value().cmp(b.0.value()));
+        var_rows.sort_by(|a, b| a.key.value().cmp(b.key.value()));
         if var_rows.is_empty() {
-            var_rows.push((TextInput::new("Key"), TextInput::new("Value")));
+            var_rows.push(KvRow::new("Key", "Value"));
         }
         Self {
             is_open: true,
@@ -48,23 +41,21 @@ impl EnvironmentEditor {
         }
     }
 
-    /// Collect the current row state into a HashMap. Rows with empty keys are
-    /// dropped. Later rows with duplicate keys overwrite earlier ones.
     pub fn collect(&self) -> HashMap<String, String> {
         let mut out = HashMap::new();
-        for (k, v) in &self.var_rows {
-            let key = k.value().to_string();
+        for row in &self.var_rows {
+            let key = row.key.value().to_string();
             if !key.is_empty() {
-                out.insert(key, v.value().to_string());
+                out.insert(key, row.value.value().to_string());
             }
         }
         out
     }
 
     fn disable_all(&mut self) {
-        for (k, v) in &mut self.var_rows {
-            k.disable();
-            v.disable();
+        for row in &mut self.var_rows {
+            row.key.disable();
+            row.value.disable();
         }
     }
 
@@ -72,13 +63,13 @@ impl EnvironmentEditor {
         self.disable_all();
         match self.focused {
             Focus::VarKey(i) => {
-                if let Some((k, _)) = self.var_rows.get_mut(i) {
-                    k.enable();
+                if let Some(row) = self.var_rows.get_mut(i) {
+                    row.key.enable();
                 }
             }
             Focus::VarValue(i) => {
-                if let Some((_, v)) = self.var_rows.get_mut(i) {
-                    v.enable();
+                if let Some(row) = self.var_rows.get_mut(i) {
+                    row.value.enable();
                 }
             }
         }
@@ -116,13 +107,13 @@ impl EnvironmentEditor {
             } else {
                 match self.focused {
                     Focus::VarKey(i) => {
-                        if let Some((k, _)) = self.var_rows.get_mut(i) {
-                            k.handle_event(event);
+                        if let Some(row) = self.var_rows.get_mut(i) {
+                            row.key.handle_event(event);
                         }
                     }
                     Focus::VarValue(i) => {
-                        if let Some((_, v)) = self.var_rows.get_mut(i) {
-                            v.handle_event(event);
+                        if let Some(row) = self.var_rows.get_mut(i) {
+                            row.value.handle_event(event);
                         }
                     }
                 }
@@ -138,8 +129,7 @@ impl EnvironmentEditor {
                 self.enable_focused();
             }
             KeyCode::Char('a') => {
-                self.var_rows
-                    .push((TextInput::new("Key"), TextInput::new("Value")));
+                self.var_rows.push(KvRow::new("Key", "Value"));
                 self.focused = Focus::VarKey(self.var_rows.len() - 1);
             }
             KeyCode::Char('d') => {
@@ -187,9 +177,9 @@ impl EnvironmentEditor {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(1), // header
-                Constraint::Min(3),    // vars
-                Constraint::Length(1), // hint
+                Constraint::Length(1),
+                Constraint::Min(3),
+                Constraint::Length(1),
             ])
             .split(inner);
 
@@ -200,7 +190,7 @@ impl EnvironmentEditor {
         );
 
         let mut y = 0u16;
-        for (i, (key, value)) in self.var_rows.iter().enumerate() {
+        for (i, row) in self.var_rows.iter().enumerate() {
             if y + 3 > chunks[1].height {
                 break;
             }
@@ -217,8 +207,8 @@ impl EnvironmentEditor {
                 width: chunks[1].width - half,
                 height: 3,
             };
-            self.render_input(frame, key_rect, key, self.focused == Focus::VarKey(i));
-            self.render_input(frame, val_rect, value, self.focused == Focus::VarValue(i));
+            render_input(frame, key_rect, &row.key, self.focused == Focus::VarKey(i), self.editing);
+            render_input(frame, val_rect, &row.value, self.focused == Focus::VarValue(i), self.editing);
             y += 3;
         }
 
@@ -232,24 +222,6 @@ impl EnvironmentEditor {
                 .style(Style::default().fg(Color::DarkGray))
                 .alignment(Alignment::Center),
             chunks[2],
-        );
-    }
-
-    fn render_input(&self, frame: &mut Frame, area: Rect, input: &TextInput, is_focused: bool) {
-        input.render(frame, area);
-        let style = if is_focused && self.editing {
-            Style::default().fg(Color::Yellow)
-        } else if is_focused {
-            Style::default().fg(Color::Cyan)
-        } else {
-            return;
-        };
-        frame.render_widget(
-            Block::bordered()
-                .border_type(BorderType::Rounded)
-                .border_style(style)
-                .title(input.title.clone()),
-            area,
         );
     }
 }

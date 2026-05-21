@@ -6,8 +6,8 @@ use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::helpers::env::substitute_required;
-use crate::helpers::items::{OAuth2Config, OAuth2Grant};
+use crate::logic::env::substitute_required;
+use crate::model::items::{OAuth2Config, OAuth2Grant};
 
 #[derive(Debug, Clone)]
 pub struct OAuth2Error(pub String);

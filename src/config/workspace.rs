@@ -1,4 +1,4 @@
-use crate::helpers::items::Item;
+use crate::model::items::Item;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::BufReader;
@@ -73,7 +73,7 @@ impl WorkspaceConfig {
     pub(crate) fn remove_from_items(
         items: &mut Vec<Item>,
         path: &[usize],
-    ) -> Result<(), &'static str> {
+    ) -> Result<Item, &'static str> {
         if path.is_empty() {
             return Err("Path is empty");
         }
@@ -81,8 +81,7 @@ impl WorkspaceConfig {
             if path[0] >= items.len() {
                 return Err("Path out of bounds");
             }
-            items.remove(path[0]);
-            return Ok(());
+            return Ok(items.remove(path[0]));
         }
         let first = path[0];
         if first >= items.len() {

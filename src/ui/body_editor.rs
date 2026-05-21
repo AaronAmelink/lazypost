@@ -3,10 +3,12 @@ use ratatui::{
     Frame,
     layout::Rect,
     style::{Color, Style},
-    widgets::{Block, BorderType},
+    widgets::{Block, BorderType, Paragraph, Wrap},
 };
 use ratatui_textarea::{CursorMove, DataCursor, TextArea};
 use serde_json;
+
+use crate::ui::json_highlight::highlight_json;
 
 /// Editor "mode" — affects which keystrokes get intercepted before being
 /// forwarded to the underlying textarea.
@@ -267,6 +269,19 @@ impl BodyEditor {
             .border_type(BorderType::Rounded)
             .title(title.to_owned())
             .border_style(border_style);
+
+        // When not actively editing, render a syntax-highlighted read-only view
+        // for JSON mode. Switches to the live textarea on edit.
+        if !self.enabled && self.mode == EditorMode::Json {
+            let text = highlight_json(&self.value());
+            frame.render_widget(
+                Paragraph::new(text)
+                    .block(block)
+                    .wrap(Wrap { trim: false }),
+                area,
+            );
+            return;
+        }
 
         self.textarea.set_block(block);
         self.textarea.set_cursor_style(if self.enabled {

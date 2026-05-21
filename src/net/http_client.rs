@@ -10,11 +10,11 @@ use reqwest::header::{
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::env::substitute_required;
-use crate::helpers::items::{
+use crate::logic::env::substitute_required;
+use crate::model::items::{
     ApiKeyLocation, Auth, FormValue, QueryParam, Request, RequestBody, RequestType,
 };
-use crate::helpers::oauth;
+use crate::net::oauth;
 
 /// Cookie store is enabled, so Set-Cookie from a response is replayed on the
 /// next request to the same domain. The store is in-memory and lives for the
