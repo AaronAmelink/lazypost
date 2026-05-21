@@ -321,6 +321,65 @@ impl RequestEditor {
         self.body_editor.set_mode(mode);
     }
 
+    fn split_url_params(url: &str) -> Option<(String, Vec<(String, String)>)> {
+        let (before_hash, fragment) = match url.split_once('#') {
+            Some((left, right)) => (left, Some(right)),
+            None => (url, None),
+        };
+        let (base, query) = before_hash.split_once('?')?;
+        if query.trim().is_empty() {
+            return None;
+        }
+
+        let mut params = Vec::new();
+        for part in query.split('&') {
+            if part.is_empty() {
+                continue;
+            }
+            let (k, v) = match part.split_once('=') {
+                Some((k, v)) => (k, v),
+                None => (part, ""),
+            };
+            if k.is_empty() {
+                continue;
+            }
+            params.push((k.to_string(), v.to_string()));
+        }
+
+        if params.is_empty() {
+            return None;
+        }
+
+        let mut base_url = base.to_string();
+        if let Some(frag) = fragment {
+            base_url.push('#');
+            base_url.push_str(frag);
+        }
+
+        Some((base_url, params))
+    }
+
+    fn autofill_params_from_url_if_empty(&mut self) {
+        if self
+            .param_rows
+            .iter()
+            .any(|r| !r.key.value().trim().is_empty())
+        {
+            return;
+        }
+
+        let url = self.url_input.value().to_string();
+        let Some((base_url, params)) = Self::split_url_params(&url) else {
+            return;
+        };
+
+        self.url_input.set_value(base_url);
+        self.param_rows = params
+            .iter()
+            .map(|(k, v)| ParamRow::from(k, v, true))
+            .collect();
+    }
+
     pub fn from_request(req: &Request) -> Self {
         let mut e = Self::new();
         e.name_input.set_value(req.name.clone());
@@ -427,6 +486,7 @@ impl RequestEditor {
             e.capture_editor.set_text(capture);
         }
 
+        e.autofill_params_from_url_if_empty();
         e.apply_body_editor_mode();
         e
     }
@@ -928,6 +988,9 @@ impl RequestEditor {
             if key.code == KeyCode::Esc {
                 self.editing = false;
                 self.disable_all_inputs();
+                if self.focused == Some(FocusId::UrlInput) {
+                    self.autofill_params_from_url_if_empty();
+                }
             } else {
                 self.forward_to_active_input(event);
             }

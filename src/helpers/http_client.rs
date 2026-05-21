@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use once_cell::sync::Lazy;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::{
+    AUTHORIZATION, CONTENT_LENGTH, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue,
+};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +91,8 @@ pub async fn execute(
         )));
     }
 
-    let mut builder = CLIENT.request(method_of(&req.request_type), trimmed);
+    let request_type = req.request_type.clone();
+    let mut builder = CLIENT.request(method_of(&request_type), trimmed);
 
     // Headers
     let mut header_map = HeaderMap::new();
@@ -104,6 +107,8 @@ pub async fn execute(
             header_map.insert(name, value);
         }
     }
+
+    let has_content_length = header_map.contains_key(CONTENT_LENGTH);
 
     // Query params (skip disabled)
     let mut query: Vec<(String, String)> = Vec::new();
@@ -163,14 +168,17 @@ pub async fn execute(
     builder = builder.headers(header_map);
 
     // Body
+    let mut body_is_empty = true;
     if let Some(body) = &req.body {
         match body {
             RequestBody::None => {}
             RequestBody::Raw(s) => {
+                body_is_empty = false;
                 let s = substitute(s, vmap);
                 builder = builder.body(s);
             }
             RequestBody::Json(v) => {
+                body_is_empty = false;
                 let s = serde_json::to_string(v)
                     .map_err(|e| HttpError::Build(format!("json serialize: {e}")))?;
                 let s = substitute(&s, vmap);
@@ -180,6 +188,7 @@ pub async fn execute(
                 builder = builder.json(&v);
             }
             RequestBody::Form(map) => {
+                body_is_empty = false;
                 let substituted: Vec<(String, String)> = map
                     .iter()
                     .map(|(k, v)| (substitute(k, vmap), substitute(v, vmap)))
@@ -187,6 +196,7 @@ pub async fn execute(
                 builder = builder.form(&substituted);
             }
             RequestBody::Multipart(fields) => {
+                body_is_empty = false;
                 let mut form = reqwest::multipart::Form::new();
                 for f in fields {
                     let key = substitute(&f.key, vmap);
@@ -213,6 +223,18 @@ pub async fn execute(
                 builder = builder.multipart(form);
             }
         }
+    }
+
+    if body_is_empty
+        && !has_content_length
+        && matches!(
+            request_type,
+            RequestType::Post | RequestType::Put | RequestType::Patch | RequestType::Delete
+        )
+    {
+        builder = builder
+            .header(CONTENT_LENGTH, HeaderValue::from_static("0"))
+            .body(Vec::<u8>::new());
     }
 
     let start = Instant::now();
