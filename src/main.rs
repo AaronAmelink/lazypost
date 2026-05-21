@@ -1,5 +1,8 @@
 mod helpers;
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEventKind,
+    KeyModifiers,
+};
 use helpers::env_config::EnvConfig;
 use helpers::environment_editor::EnvironmentEditor;
 use helpers::help_overlay::HelpOverlay;
@@ -267,6 +270,21 @@ impl App {
     }
 
     fn handle_events(&mut self, event: &Event) -> Result<bool, &'static str> {
+        if matches!(event, Event::Paste(_)) {
+            if let Some(widget) = &mut self.add_item_widget {
+                if widget.editor.is_editing() {
+                    widget.editor.handle_event(event);
+                    return Ok(true);
+                }
+            }
+            if let Some(editor) = &mut self.current_editor {
+                if self.focus_pane == Pane::Editor && editor.is_editing() {
+                    editor.handle_event(event);
+                    return Ok(true);
+                }
+            }
+        }
+
         let Event::Key(key) = event else {
             return Ok(true);
         };
@@ -424,7 +442,11 @@ impl App {
             }
             Pane::Editor => {
                 if let Some(editor) = self.current_editor.as_mut() {
+                    let was_editing = editor.is_editing();
                     editor.handle_event(event);
+                    if was_editing && !editor.is_editing() {
+                        self.save_current_editor_silent();
+                    }
                 }
             }
             Pane::Response => {
@@ -487,6 +509,7 @@ fn main() {
 
     app.sync_editor_with_selection();
 
+    let _ = crossterm::execute!(std::io::stdout(), EnableBracketedPaste);
     ratatui::run(|terminal| {
         loop {
             let _ = terminal.draw(|frame| render(frame, &mut app));
@@ -496,6 +519,7 @@ fn main() {
             }
         }
     });
+    let _ = crossterm::execute!(std::io::stdout(), DisableBracketedPaste);
 }
 
 fn tick(app: &mut App) -> Result<bool, &'static str> {
@@ -525,7 +549,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     let sidebar_border_style = pane_border_style(app.focus_pane == Pane::Sidebar);
     frame.render_widget(
         Block::bordered()
-            .title("Endpoints")
+            .title("[1] Endpoints")
             .border_style(sidebar_border_style),
         left,
     );
@@ -541,7 +565,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     let editor_border_style = pane_border_style(app.focus_pane == Pane::Editor);
     frame.render_widget(
         Block::bordered()
-            .title("Request")
+            .title("[2] Request")
             .border_style(editor_border_style),
         middle,
     );
@@ -550,7 +574,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
         horizontal: 1,
     });
     if let Some(editor) = app.current_editor.as_mut() {
-        editor.render(frame, inner_middle, app.focus_pane == Pane::Editor);
+        editor.render(frame, inner_middle, app.focus_pane == Pane::Editor, None);
     } else {
         frame.render_widget(
             Paragraph::new("Select a request from the sidebar to edit it.")
@@ -563,7 +587,7 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     let response_border_style = pane_border_style(app.focus_pane == Pane::Response);
     frame.render_widget(
         Block::bordered()
-            .title("Response")
+            .title("[3] Response")
             .border_style(response_border_style),
         right,
     );

@@ -82,4 +82,34 @@ impl TextInput {
             frame.set_cursor_position((area.x + x as u16, area.y + 1));
         }
     }
+
+    pub fn render_inline(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        is_focused: bool,
+        editing: bool,
+    ) {
+        let width = area.width.max(1) - 1;
+        let scroll = self.input.visual_scroll(width as usize);
+
+        let style = if self.enabled && editing {
+            Style::default().fg(Color::Yellow)
+        } else if is_focused {
+            Style::default().fg(Color::Cyan)
+        } else {
+            Style::default()
+        };
+
+        let widget = Paragraph::new(self.input.value())
+            .style(style)
+            .scroll((0, scroll as u16));
+
+        frame.render_widget(widget, area);
+
+        if self.enabled {
+            let x = self.input.visual_cursor().max(scroll) - scroll;
+            frame.set_cursor_position((area.x + x as u16, area.y));
+        }
+    }
 }

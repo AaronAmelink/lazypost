@@ -120,8 +120,9 @@ impl HelpOverlay {
         kv(
             &mut lines,
             "[ / ]",
-            "Cycle sub-tabs (Info / Auth / Body / Params / URL Vars / Headers / Capture)",
+            "Cycle sub-tabs (Info / Auth / Body / Params / URL Vars* / Headers / Capture)",
         );
+        kv(&mut lines, "*", "URL Vars only appears when the URL has <vars>");
         kv(
             &mut lines,
             "j / k",
@@ -136,13 +137,13 @@ impl HelpOverlay {
         kv(
             &mut lines,
             "a",
-            "Add a row (Params / URL Vars / Headers / Form / Multipart)",
+            "Add a row (Params / Headers / Form / Multipart)",
         );
         kv(&mut lines, "d", "Delete the focused row");
         kv(
             &mut lines,
             "t",
-            "Toggle: param/url-var enabled, or multipart text/file",
+            "Toggle: param enabled, or multipart text/file",
         );
         kv(
             &mut lines,
@@ -194,8 +195,9 @@ impl HelpOverlay {
         section(&mut lines, "URL variables");
         para(
             &mut lines,
-            "On the URL Vars tab, define key/value pairs and reference them in the URL as \
-             <key>. Whitespace inside the brackets is allowed (< key >). Values are URL-encoded. \
+            "Use <key> in the URL to define URL vars. The URL Vars tab appears only when \
+             a URL contains <vars>, and keys are derived from the URL (values are editable). \
+             Whitespace inside the brackets is allowed (< key >). Values are URL-encoded. \
              Missing or empty URL vars are errors.",
         );
         blank(&mut lines);

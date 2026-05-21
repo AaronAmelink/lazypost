@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, BorderType},
 };
 use ratatui_textarea::{CursorMove, DataCursor, TextArea};
+use serde_json;
 
 /// Editor "mode" — affects which keystrokes get intercepted before being
 /// forwarded to the underlying textarea.
@@ -82,6 +83,21 @@ impl BodyEditor {
     pub fn handle_event(&mut self, event: &Event) -> bool {
         if !self.enabled {
             return false;
+        }
+        if let Event::Paste(text) = event {
+            if self.mode == EditorMode::Json {
+                let trimmed = text.trim();
+                if !trimmed.is_empty() {
+                    if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                        if let Ok(pretty) = serde_json::to_string_pretty(&value) {
+                            self.textarea.insert_str(&pretty);
+                            return true;
+                        }
+                    }
+                }
+            }
+            self.textarea.insert_str(text);
+            return true;
         }
         if self.mode == EditorMode::Json
             && let Event::Key(key) = event

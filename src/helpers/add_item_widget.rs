@@ -80,6 +80,7 @@ impl AddItemWidget {
             vertical: 1,
             horizontal: 2,
         });
-        self.editor.render(frame, inner, true);
+        self.editor
+            .render(frame, inner, true, Some("Enter: create  Esc: cancel  [/] tab"));
     }
 }
