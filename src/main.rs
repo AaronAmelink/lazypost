@@ -484,42 +484,6 @@ impl App {
     }
 }
 
-fn default_items() -> Vec<Item> {
-    let req = |name: &str, request_type: RequestType| {
-        Item::Request(Request {
-            name: name.into(),
-            request_type,
-            url: String::new(),
-            headers: None,
-            body: None,
-            auth: None,
-            params: None,
-            url_vars: None,
-            capture: None,
-        })
-    };
-
-    vec![
-        req("Get Users", RequestType::Get),
-        req("Create User", RequestType::Post),
-        req("Update User", RequestType::Put),
-        req("Delete User", RequestType::Delete),
-        req("Get Posts", RequestType::Get),
-        Item::Folder(ConfigFolder {
-            name: "User Actions".into(),
-            items: vec![
-                Item::Folder(ConfigFolder {
-                    name: "Nested Folder".into(),
-                    items: vec![req("Delete User", RequestType::Delete)],
-                }),
-                Item::Folder(ConfigFolder {
-                    name: "Another Nested".into(),
-                    items: vec![req("Delete User", RequestType::Delete)],
-                }),
-            ],
-        }),
-    ]
-}
 
 fn main() {
     let config_path = Path::new(CONFIG_PATH);
@@ -528,10 +492,6 @@ fn main() {
     if config_path.exists() {
         app.config = WorkspaceConfig::create_from_file(config_path)
             .unwrap_or_else(|_| WorkspaceConfig::new_empty());
-        if app.config.data.items.is_empty() {
-            app.config.data.items = default_items();
-            let _ = app.config.save();
-        }
         app.sidebar.items = app.config.data.items.clone();
     } else {
         app.config = WorkspaceConfig::new_with_path(config_path);
