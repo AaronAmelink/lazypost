@@ -13,7 +13,7 @@ use ui::help_overlay::HelpOverlay;
 use ui::init_modal::{InitModal, InitAction};
 use config::history::{History, HistoryAction};
 use net::http_client::{self, ExecutedResponse, HttpError};
-use model::items::{ConfigFolder, Item, Request, RequestType};
+use model::items::{Item, Request};
 use ui::request_editor::RequestEditor;
 use ui::response_view::ResponseView;
 use ui::sidebar::Sidebar;
@@ -484,6 +484,9 @@ impl App {
     }
 }
 
+fn default_items() -> Vec<Item> {
+    vec![]
+}
 
 fn main() {
     let config_path = Path::new(CONFIG_PATH);
@@ -492,7 +495,14 @@ fn main() {
     if config_path.exists() {
         app.config = WorkspaceConfig::create_from_file(config_path)
             .unwrap_or_else(|_| WorkspaceConfig::new_empty());
+        if app.config.data.items.is_empty() {
+            app.config.data.items = default_items();
+            let _ = app.config.save();
+        }
         app.sidebar.items = app.config.data.items.clone();
+        if !app.sidebar.items.is_empty() {
+            app.sidebar.selected_path = vec![0];
+        }
     } else {
         app.config = WorkspaceConfig::new_with_path(config_path);
         app.init_modal = Some(InitModal::new());

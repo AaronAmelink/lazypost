@@ -151,9 +151,14 @@ impl Sidebar {
         near_path: Vec<usize>,
         item: Item,
     ) -> Result<Vec<usize>, &'static str> {
-        // Insert after the currently selected item (or inside the selected folder).
-        let new_path = insert_after(&mut self.items, &near_path, item)?;
-        Ok(new_path)
+        if matches!(self.item_at(&near_path), Some(Item::Folder(_))) {
+            self.open_folders.insert(near_path.clone());
+            let new_path = insert_into_folder(&mut self.items, &near_path, item)?;
+            Ok(new_path)
+        } else {
+            let new_path = insert_after(&mut self.items, &near_path, item)?;
+            Ok(new_path)
+        }
     }
 
     pub fn handle_event(&mut self, event: &Event) -> Result<bool, &'static str> {
@@ -217,7 +222,14 @@ impl Sidebar {
             KeyCode::Char('p') => {
                 if let Some(item) = self.clipboard.take() {
                     let near = self.selected_path.clone();
-                    if let Ok(new_path) = insert_after(&mut self.items, &near, item) {
+                    let target_is_folder = matches!(self.item_at(&near), Some(Item::Folder(_)));
+                    let result = if target_is_folder {
+                        self.open_folders.insert(near.clone());
+                        insert_into_folder(&mut self.items, &near, item)
+                    } else {
+                        insert_after(&mut self.items, &near, item)
+                    };
+                    if let Ok(new_path) = result {
                         self.selected_path = new_path;
                         let _ = WorkspaceConfig::save_items_to_file(
                             self.items.clone(),
@@ -356,6 +368,39 @@ fn insert_after(
             Ok(child_path)
         }
         _ => Err("path points into a non-folder"),
+    }
+}
+
+/// Append `item` at the end of the folder at `folder_path`, returning the new
+/// item's path. Differs from `insert_after` in that hovering a folder inserts
+/// *inside* it rather than after it as a sibling.
+fn insert_into_folder(
+    items: &mut Vec<Item>,
+    folder_path: &[usize],
+    item: Item,
+) -> Result<Vec<usize>, &'static str> {
+    if folder_path.is_empty() {
+        items.push(item);
+        return Ok(vec![items.len() - 1]);
+    }
+    let head = folder_path[0];
+    if folder_path.len() == 1 {
+        match items.get_mut(head) {
+            Some(Item::Folder(f)) => {
+                f.items.push(item);
+                Ok(vec![head, f.items.len() - 1])
+            }
+            _ => Err("path does not point to a folder"),
+        }
+    } else {
+        match items.get_mut(head) {
+            Some(Item::Folder(f)) => {
+                let mut child_path = insert_into_folder(&mut f.items, &folder_path[1..], item)?;
+                child_path.insert(0, head);
+                Ok(child_path)
+            }
+            _ => Err("path points into a non-folder"),
+        }
     }
 }
 
