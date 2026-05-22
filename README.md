@@ -7,7 +7,7 @@ A TUI HTTP client. Still a WIP
 Requires Rust 1.85+ ([rustup](https://rustup.rs)).
 
 ```sh
-cargo install --git https://github.com/aaron-amelink/lazypost
+cargo install lazypost
 ```
 
 Or clone and build manually:
