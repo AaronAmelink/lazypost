@@ -158,3 +158,138 @@ pub enum OAuth2Grant {
     ClientCredentials,
     RefreshToken,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::style::Color;
+    use serde_json::json;
+
+    // --- RequestType accessors ---
+
+    #[test]
+    fn request_type_as_str() {
+        assert_eq!(RequestType::Get.as_str(), "GET");
+        assert_eq!(RequestType::Post.as_str(), "POST");
+        assert_eq!(RequestType::Put.as_str(), "PUT");
+        assert_eq!(RequestType::Delete.as_str(), "DELETE");
+        assert_eq!(RequestType::Patch.as_str(), "PATCH");
+    }
+
+    #[test]
+    fn request_type_color() {
+        assert_eq!(RequestType::Get.color(), Color::Blue);
+        assert_eq!(RequestType::Post.color(), Color::Green);
+        assert_eq!(RequestType::Put.color(), Color::Yellow);
+        assert_eq!(RequestType::Delete.color(), Color::Red);
+        assert_eq!(RequestType::Patch.color(), Color::Cyan);
+    }
+
+    // --- serde round-trips ---
+
+    fn round_trip<T: Serialize + for<'de> Deserialize<'de> + PartialEq + std::fmt::Debug>(v: &T) {
+        let json = serde_json::to_string(v).unwrap();
+        let back: T = serde_json::from_str(&json).unwrap();
+        assert_eq!(*v, back);
+    }
+
+    #[test]
+    fn request_type_round_trips() {
+        for rt in [
+            RequestType::Get,
+            RequestType::Post,
+            RequestType::Put,
+            RequestType::Delete,
+            RequestType::Patch,
+        ] {
+            round_trip(&rt);
+        }
+    }
+
+    #[test]
+    fn auth_bearer_round_trip() {
+        round_trip(&Auth::Bearer {
+            token: "tok".into(),
+        });
+    }
+
+    #[test]
+    fn auth_basic_round_trip() {
+        round_trip(&Auth::Basic {
+            username: "user".into(),
+            password: "pass".into(),
+        });
+    }
+
+    #[test]
+    fn auth_api_key_header_round_trip() {
+        round_trip(&Auth::ApiKey {
+            key: "X-Api-Key".into(),
+            value: "secret".into(),
+            location: ApiKeyLocation::Header,
+        });
+    }
+
+    #[test]
+    fn auth_api_key_query_round_trip() {
+        round_trip(&Auth::ApiKey {
+            key: "api_key".into(),
+            value: "secret".into(),
+            location: ApiKeyLocation::Query,
+        });
+    }
+
+    #[test]
+    fn request_body_json_round_trip() {
+        round_trip(&RequestBody::Json(json!({"a": 1, "b": [1, 2]})));
+    }
+
+    #[test]
+    fn request_body_raw_round_trip() {
+        round_trip(&RequestBody::Raw("raw text".into()));
+    }
+
+    #[test]
+    fn request_body_none_round_trip() {
+        round_trip(&RequestBody::None);
+    }
+
+    #[test]
+    fn item_folder_round_trip() {
+        let item = Item::Folder(ConfigFolder {
+            name: "my folder".into(),
+            items: vec![],
+        });
+        round_trip(&item);
+    }
+
+    #[test]
+    fn item_request_round_trip() {
+        let item = Item::Request(Request {
+            name: "get users".into(),
+            request_type: RequestType::Get,
+            url: "https://api.example.com/users".into(),
+            headers: None,
+            body: None,
+            auth: None,
+            params: None,
+            url_vars: None,
+            capture: None,
+        });
+        round_trip(&item);
+    }
+
+    #[test]
+    fn oauth2_grant_defaults_to_client_credentials() {
+        assert_eq!(OAuth2Grant::default(), OAuth2Grant::ClientCredentials);
+    }
+
+    #[test]
+    fn query_param_enabled_flag_round_trips() {
+        round_trip(&QueryParam {
+            key: "k".into(),
+            value: "v".into(),
+            enabled: false,
+        });
+    }
+}

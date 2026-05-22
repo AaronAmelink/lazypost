@@ -164,4 +164,85 @@ mod tests {
         let a = json!({"auth": "Basic xyz"});
         assert!(extract_captures(&t, &a).is_empty());
     }
+
+    // --- value_to_env_string ---
+
+    #[test]
+    fn value_to_env_string_null_is_empty() {
+        assert_eq!(value_to_env_string(&Value::Null), "");
+    }
+
+    #[test]
+    fn value_to_env_string_bool() {
+        assert_eq!(value_to_env_string(&json!(true)), "true");
+        assert_eq!(value_to_env_string(&json!(false)), "false");
+    }
+
+    #[test]
+    fn value_to_env_string_number() {
+        assert_eq!(value_to_env_string(&json!(42)), "42");
+        assert_eq!(value_to_env_string(&json!(3.14)), "3.14");
+    }
+
+    #[test]
+    fn value_to_env_string_object_is_json() {
+        let v = json!({"a": 1});
+        let s = value_to_env_string(&v);
+        assert!(s.contains("\"a\"") && s.contains('1'));
+    }
+
+    #[test]
+    fn value_to_env_string_array_is_json() {
+        let s = value_to_env_string(&json!([1, 2]));
+        assert_eq!(s, "[1,2]");
+    }
+
+    // --- structural edge cases ---
+
+    #[test]
+    fn missing_key_in_actual_object_is_skipped() {
+        let t = json!({"a": "%x%", "b": "%y%"});
+        let a = json!({"a": "found"});
+        let out = extract_captures(&t, &a);
+        assert_eq!(out, vec![("x".to_string(), "found".to_string())]);
+    }
+
+    #[test]
+    fn array_length_mismatch_captures_overlap() {
+        let t = json!(["%a%", "%b%", "%c%"]);
+        let a = json!(["x", "y"]);
+        let out = extract_captures(&t, &a);
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].1, "x");
+        assert_eq!(out[1].1, "y");
+    }
+
+    #[test]
+    fn captures_null_value_as_empty_string() {
+        let t = json!({"k": "%v%"});
+        let a = json!({"k": null});
+        let out = extract_captures(&t, &a);
+        assert_eq!(out, vec![("v".to_string(), "".to_string())]);
+    }
+
+    #[test]
+    fn captures_bool_value() {
+        let t = json!({"ok": "%flag%"});
+        let a = json!({"ok": true});
+        let out = extract_captures(&t, &a);
+        assert_eq!(out, vec![("flag".to_string(), "true".to_string())]);
+    }
+
+    #[test]
+    fn empty_template_object_produces_no_captures() {
+        assert!(extract_captures(&json!({}), &json!({"a": "b"})).is_empty());
+    }
+
+    #[test]
+    fn struct_type_mismatch_is_skipped() {
+        // template is object, actual is array — should not panic, just skip
+        let t = json!({"a": "%x%"});
+        let a = json!(["a"]);
+        assert!(extract_captures(&t, &a).is_empty());
+    }
 }

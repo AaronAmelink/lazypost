@@ -119,4 +119,39 @@ mod tests {
         let v = vars(&[("x", "1"), ("y", "2")]);
         assert_eq!(substitute_required("a{{x}}b{{y}}", &v).unwrap(), "a1b2");
     }
+
+    #[test]
+    fn no_placeholders_passes_through_unchanged() {
+        let v = vars(&[("x", "1")]);
+        assert_eq!(substitute("plain string", &v), "plain string");
+        assert_eq!(substitute_required("plain string", &v).unwrap(), "plain string");
+    }
+
+    #[test]
+    fn substitute_multiple_occurrences_of_same_var() {
+        let v = vars(&[("x", "hi")]);
+        assert_eq!(substitute("{{x}} {{x}}", &v), "hi hi");
+    }
+
+    #[test]
+    fn required_error_lists_all_missing_vars() {
+        let empty = HashMap::new();
+        let err = substitute_required("{{a}} and {{b}}", &empty).unwrap_err();
+        assert!(err.contains('a'), "got: {err}");
+        assert!(err.contains('b'), "got: {err}");
+    }
+
+    #[test]
+    fn required_error_reports_both_missing_and_empty() {
+        let v = vars(&[("empty_var", "")]);
+        let err = substitute_required("{{missing_var}} {{empty_var}}", &v).unwrap_err();
+        assert!(err.contains("missing env vars"), "got: {err}");
+        assert!(err.contains("empty env vars"), "got: {err}");
+    }
+
+    #[test]
+    fn substitute_dots_and_dashes_in_name() {
+        let v = vars(&[("api.base-url", "http://localhost")]);
+        assert_eq!(substitute("{{api.base-url}}/v1", &v), "http://localhost/v1");
+    }
 }

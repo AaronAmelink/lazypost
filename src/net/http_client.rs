@@ -171,6 +171,158 @@ fn method_of(rt: &RequestType) -> Method {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn vars(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+
+    // --- is_valid_url_var_name ---
+
+    #[test]
+    fn valid_url_var_names() {
+        for name in ["id", "user_id", "v1.2", "my-var", "ABC123", "a.b.c"] {
+            assert!(is_valid_url_var_name(name), "{name} should be valid");
+        }
+    }
+
+    #[test]
+    fn invalid_url_var_names() {
+        for name in ["", "has space", "bang!", "slash/path", "at@sign"] {
+            assert!(!is_valid_url_var_name(name), "{name} should be invalid");
+        }
+    }
+
+    // --- substitute_url_vars ---
+
+    #[test]
+    fn url_var_substitutes_known() {
+        let v = vars(&[("id", "42")]);
+        assert_eq!(
+            substitute_url_vars("https://api.example.com/users/<id>", &v).unwrap(),
+            "https://api.example.com/users/42"
+        );
+    }
+
+    #[test]
+    fn url_var_no_placeholders_passes_through() {
+        let v = vars(&[("id", "42")]);
+        assert_eq!(
+            substitute_url_vars("https://api.example.com/users", &v).unwrap(),
+            "https://api.example.com/users"
+        );
+    }
+
+    #[test]
+    fn url_var_missing_errors() {
+        let v = vars(&[]);
+        let err = substitute_url_vars("<host>/path", &v).unwrap_err();
+        assert!(err.contains("missing url vars"), "got: {err}");
+        assert!(err.contains("host"), "got: {err}");
+    }
+
+    #[test]
+    fn url_var_empty_errors() {
+        let v = vars(&[("host", "")]);
+        let err = substitute_url_vars("<host>/path", &v).unwrap_err();
+        assert!(err.contains("empty url vars"), "got: {err}");
+    }
+
+    #[test]
+    fn url_var_both_missing_and_empty_in_message() {
+        let v = vars(&[("a", "")]);
+        let err = substitute_url_vars("<a>/<b>", &v).unwrap_err();
+        assert!(err.contains("missing url vars"), "got: {err}");
+        assert!(err.contains("empty url vars"), "got: {err}");
+    }
+
+    #[test]
+    fn url_var_tolerates_whitespace_in_brackets() {
+        let v = vars(&[("id", "99")]);
+        assert_eq!(
+            substitute_url_vars("items/< id >", &v).unwrap(),
+            "items/99"
+        );
+    }
+
+    #[test]
+    fn url_var_multiple_substitutions() {
+        let v = vars(&[("org", "acme"), ("repo", "widget")]);
+        assert_eq!(
+            substitute_url_vars("https://git.io/<org>/<repo>", &v).unwrap(),
+            "https://git.io/acme/widget"
+        );
+    }
+
+    // --- method_of ---
+
+    #[test]
+    fn method_of_all_variants() {
+        assert_eq!(method_of(&RequestType::Get), Method::GET);
+        assert_eq!(method_of(&RequestType::Post), Method::POST);
+        assert_eq!(method_of(&RequestType::Put), Method::PUT);
+        assert_eq!(method_of(&RequestType::Patch), Method::PATCH);
+        assert_eq!(method_of(&RequestType::Delete), Method::DELETE);
+    }
+
+    // --- build_url_var_map ---
+
+    #[test]
+    fn build_url_var_map_none_rows_returns_empty() {
+        let result = build_url_var_map(&None, &HashMap::new()).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn build_url_var_map_skips_disabled() {
+        let rows = Some(vec![QueryParam {
+            key: "id".into(),
+            value: "1".into(),
+            enabled: false,
+        }]);
+        let result = build_url_var_map(&rows, &HashMap::new()).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn build_url_var_map_empty_key_errors() {
+        let rows = Some(vec![QueryParam {
+            key: "  ".into(),
+            value: "v".into(),
+            enabled: true,
+        }]);
+        let err = build_url_var_map(&rows, &HashMap::new()).unwrap_err();
+        assert!(matches!(err, HttpError::Build(_)));
+    }
+
+    #[test]
+    fn build_url_var_map_invalid_key_errors() {
+        let rows = Some(vec![QueryParam {
+            key: "bad key!".into(),
+            value: "v".into(),
+            enabled: true,
+        }]);
+        let err = build_url_var_map(&rows, &HashMap::new()).unwrap_err();
+        assert!(matches!(err, HttpError::Build(_)));
+    }
+
+    #[test]
+    fn build_url_var_map_encodes_special_chars() {
+        let rows = Some(vec![QueryParam {
+            key: "q".into(),
+            value: "hello world".into(),
+            enabled: true,
+        }]);
+        let result = build_url_var_map(&rows, &HashMap::new()).unwrap();
+        assert_eq!(result["q"], "hello%20world");
+    }
+}
+
 pub async fn execute(
     req: Request,
     vars: HashMap<String, String>,
