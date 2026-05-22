@@ -1,8 +1,6 @@
 # lazypost
 
-A keyboard-driven terminal HTTP client. Three panes — sidebar of saved
-requests, request editor, response — laid out like `lazygit`. No mouse, no
-config file to hand-write.
+A TUI HTTP client. Still a WIP
 
 ## Install
 
@@ -170,3 +168,7 @@ routing. Modules: `config/` (workspace, env, history), `ui/` (widgets and
 modals), `net/` (HTTP client, OAuth), `logic/` (variable substitution,
 capture), `model/` (data types). Async HTTP runs on a tokio multi-thread
 runtime; responses arrive via `mpsc` so the render loop never blocks.
+
+
+## AI Usage
+Created using AI for documentation / some ui snippets.
