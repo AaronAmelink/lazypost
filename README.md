@@ -171,4 +171,4 @@ runtime; responses arrive via `mpsc` so the render loop never blocks.
 
 
 ## AI Usage
-Created using AI for documentation / some ui snippets.
+AI used to create documentation, some code snippets, and test cases.
