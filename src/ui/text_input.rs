@@ -1,9 +1,15 @@
 use ratatui::{
-    Frame, crossterm::event::Event, style::{Color, Style}, widgets::{Block, BorderType, Paragraph}
+    Frame,
+    crossterm::event::Event,
+    style::{Color, Style},
+    widgets::{Block, BorderType, Paragraph},
 };
-use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+use tui_input::backend::crossterm::EventHandler;
 
+/// Single-line text field with an enabled/disabled toggle. When enabled, key
+/// events are consumed and the cursor is drawn; when disabled, the field is
+/// read-only and the cursor isn't shown.
 #[derive(Debug, Default, Clone)]
 pub struct TextInput {
     input: Input,
@@ -20,10 +26,6 @@ impl TextInput {
         }
     }
 
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     pub fn enable(&mut self) {
         self.enabled = true;
     }
@@ -32,45 +34,27 @@ impl TextInput {
         self.enabled = false;
     }
 
-    pub fn toggle(&mut self) {
-        self.enabled = !self.enabled;
-    }
-
-    pub fn clear(&mut self) {
-        self.input.reset();
-    }
-
     pub fn value(&self) -> &str {
         self.input.value()
-    }
-
-    pub fn value_and_reset(&mut self) -> String {
-        self.input.value_and_reset()
-    }
-
-    pub fn take_value(&mut self) -> String {
-        self.value_and_reset()
     }
 
     pub fn set_value(&mut self, value: impl Into<String>) {
         self.input = Input::new(value.into());
     }
 
+    /// Returns `true` if the event was consumed. Only consumes key events
+    /// while the input is enabled.
     pub fn handle_event(&mut self, event: &Event) -> bool {
         if !self.enabled {
             return false;
         }
-
-        match event {
-            Event::Key(_key_event) => {
-
-                self.input.handle_event(event);
-                true
-            }
-            _ => false,
+        if let Event::Key(_) = event {
+            self.input.handle_event(event);
+            true
+        } else {
+            false
         }
     }
-
 
     pub fn render(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
         let width = area.width.max(3) - 3;
@@ -85,7 +69,11 @@ impl TextInput {
         let widget = Paragraph::new(self.input.value())
             .style(style)
             .scroll((0, scroll as u16))
-            .block(Block::bordered().border_type(BorderType::Rounded).title(self.title.as_str()));
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title(self.title.as_str()),
+            );
 
         frame.render_widget(widget, area);
 
