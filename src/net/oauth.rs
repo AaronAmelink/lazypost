@@ -68,8 +68,7 @@ pub async fn fetch_token(
         .map_err(|e| OAuth2Error(format!("token_url: {e}")))?;
     let mut scopes: Vec<String> = Vec::new();
     for s in &config.scopes {
-        let s = substitute_required(s, vars)
-            .map_err(|e| OAuth2Error(format!("scope: {e}")))?;
+        let s = substitute_required(s, vars).map_err(|e| OAuth2Error(format!("scope: {e}")))?;
         if !s.is_empty() {
             scopes.push(s);
         }

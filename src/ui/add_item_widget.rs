@@ -166,23 +166,35 @@ impl AddItemWidget {
 
         // Kind selector
         let req_style = if self.kind == ItemKind::Request {
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(Color::DarkGray)
         };
         let folder_style = if self.kind == ItemKind::Folder {
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(Color::DarkGray)
         };
         let selector = Line::from(vec![
             Span::styled(
-                if self.kind == ItemKind::Request { "[Request]" } else { " Request " },
+                if self.kind == ItemKind::Request {
+                    "[Request]"
+                } else {
+                    " Request "
+                },
                 req_style,
             ),
             Span::raw("  "),
             Span::styled(
-                if self.kind == ItemKind::Folder { "[Folder]" } else { " Folder " },
+                if self.kind == ItemKind::Folder {
+                    "[Folder]"
+                } else {
+                    " Folder "
+                },
                 folder_style,
             ),
             Span::raw("   "),

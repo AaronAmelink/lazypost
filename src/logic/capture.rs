@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn value_to_env_string_number() {
         assert_eq!(value_to_env_string(&json!(42)), "42");
-        assert_eq!(value_to_env_string(&json!(3.14)), "3.14");
+        assert_eq!(value_to_env_string(&json!(1.5)), "1.5");
     }
 
     #[test]

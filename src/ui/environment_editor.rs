@@ -207,8 +207,20 @@ impl EnvironmentEditor {
                 width: chunks[1].width - half,
                 height: 3,
             };
-            render_input(frame, key_rect, &row.key, self.focused == Focus::VarKey(i), self.editing);
-            render_input(frame, val_rect, &row.value, self.focused == Focus::VarValue(i), self.editing);
+            render_input(
+                frame,
+                key_rect,
+                &row.key,
+                self.focused == Focus::VarKey(i),
+                self.editing,
+            );
+            render_input(
+                frame,
+                val_rect,
+                &row.value,
+                self.focused == Focus::VarValue(i),
+                self.editing,
+            );
             y += 3;
         }
 

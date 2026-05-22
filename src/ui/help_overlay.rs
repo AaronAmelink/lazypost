@@ -122,7 +122,11 @@ impl HelpOverlay {
             "[ / ]",
             "Cycle sub-tabs (Info / Auth / Body / Params / URL Vars* / Headers / Capture)",
         );
-        kv(&mut lines, "*", "URL Vars only appears when the URL has <vars>");
+        kv(
+            &mut lines,
+            "*",
+            "URL Vars only appears when the URL has <vars>",
+        );
         kv(
             &mut lines,
             "j / k",

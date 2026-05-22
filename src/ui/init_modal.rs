@@ -43,7 +43,12 @@ impl InitModal {
         let x = screen_area.x + (screen_area.width.saturating_sub(modal_width)) / 2;
         let y = screen_area.y + (screen_area.height.saturating_sub(modal_height)) / 2;
 
-        let modal_area = Rect { x, y, width: modal_width, height: modal_height };
+        let modal_area = Rect {
+            x,
+            y,
+            width: modal_width,
+            height: modal_height,
+        };
         frame.render_widget(Clear, modal_area);
         frame.render_widget(
             Block::bordered()
@@ -53,7 +58,10 @@ impl InitModal {
             modal_area,
         );
 
-        let inner = modal_area.inner(Margin { vertical: 1, horizontal: 2 });
+        let inner = modal_area.inner(Margin {
+            vertical: 1,
+            horizontal: 2,
+        });
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -71,23 +79,39 @@ impl InitModal {
         );
 
         let cwd_display = if self.cwd.len() as u16 > modal_width.saturating_sub(4) {
-            format!("…{}", &self.cwd[self.cwd.len().saturating_sub((modal_width as usize).saturating_sub(5))..])
+            format!(
+                "…{}",
+                &self.cwd[self
+                    .cwd
+                    .len()
+                    .saturating_sub((modal_width as usize).saturating_sub(5))..]
+            )
         } else {
             self.cwd.clone()
         };
         frame.render_widget(
-            Paragraph::new(cwd_display).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Paragraph::new(cwd_display).style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
             chunks[1],
         );
 
         frame.render_widget(
-            Paragraph::new("Initialize lazypost workspace here?").style(Style::default().fg(Color::White)),
+            Paragraph::new("Initialize lazypost workspace here?")
+                .style(Style::default().fg(Color::White)),
             chunks[2],
         );
 
         frame.render_widget(
             Paragraph::new(Line::from(vec![
-                Span::styled("[y] Yes", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    "[y] Yes",
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 Span::raw("   "),
                 Span::styled("[n] No / quit", Style::default().fg(Color::Red)),
             ])),

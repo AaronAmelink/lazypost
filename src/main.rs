@@ -1,23 +1,16 @@
-mod model;
-mod net;
 mod config;
 mod logic;
+mod model;
+mod net;
 mod ui;
-use crossterm::event::{
-    self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEventKind,
-    KeyModifiers,
-};
 use config::env_config::{EnvConfig, env_path_for_cwd};
-use ui::environment_editor::EnvironmentEditor;
-use ui::help_overlay::HelpOverlay;
-use ui::init_modal::{InitModal, InitAction};
 use config::history::{History, HistoryAction};
-use net::http_client::{self, ExecutedResponse, HttpError};
-use model::items::{Item, Request};
-use ui::request_editor::RequestEditor;
-use ui::response_view::ResponseView;
-use ui::sidebar::Sidebar;
 use config::workspace::WorkspaceConfig;
+use crossterm::event::{
+    self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEventKind, KeyModifiers,
+};
+use model::items::{Item, Request};
+use net::http_client::{self, ExecutedResponse, HttpError};
 use ratatui::layout::{Constraint, Layout, Margin};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
@@ -26,6 +19,12 @@ use std::path::Path;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use ui::environment_editor::EnvironmentEditor;
+use ui::help_overlay::HelpOverlay;
+use ui::init_modal::{InitAction, InitModal};
+use ui::request_editor::RequestEditor;
+use ui::response_view::ResponseView;
+use ui::sidebar::Sidebar;
 
 use crate::ui::add_item_widget::AddItemWidget;
 
@@ -238,8 +237,7 @@ impl App {
         };
         match editor.to_request() {
             Ok(req) => {
-                if ui::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok()
-                {
+                if ui::sidebar::replace_request_at(&mut self.sidebar.items, &path, req).is_ok() {
                     let _ = WorkspaceConfig::save_items_to_file(
                         self.sidebar.items.clone(),
                         Path::new(CONFIG_PATH),
@@ -293,17 +291,18 @@ impl App {
         }
 
         if matches!(event, Event::Paste(_)) {
-            if let Some(widget) = &mut self.add_item_widget {
-                if widget.is_editing() {
-                    widget.handle_event(event)?;
-                    return Ok(true);
-                }
+            if let Some(widget) = &mut self.add_item_widget
+                && widget.is_editing()
+            {
+                widget.handle_event(event)?;
+                return Ok(true);
             }
-            if let Some(editor) = &mut self.current_editor {
-                if self.focus_pane == Pane::Editor && editor.is_editing() {
-                    editor.handle_event(event);
-                    return Ok(true);
-                }
+            if let Some(editor) = &mut self.current_editor
+                && self.focus_pane == Pane::Editor
+                && editor.is_editing()
+            {
+                editor.handle_event(event);
+                return Ok(true);
             }
         }
 
@@ -635,10 +634,13 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     }
     let pane_hint = match app.focus_pane {
         Pane::Sidebar => "j/k nav  x cut  p paste  d del  n new  Enter folder",
-        Pane::Editor  => "w save  s send  [/] tab  e edit  Esc stop",
+        Pane::Editor => "w save  s send  [/] tab  e edit  Esc stop",
         Pane::Response => "j/k scroll  [/] body/headers",
     };
-    spans.push(Span::styled(pane_hint, Style::default().fg(Color::DarkGray)));
+    spans.push(Span::styled(
+        pane_hint,
+        Style::default().fg(Color::DarkGray),
+    ));
     spans.push(Span::styled(
         "   Tab/1-3 panes  E env  H history  ? help  q quit",
         Style::default().fg(Color::DarkGray),

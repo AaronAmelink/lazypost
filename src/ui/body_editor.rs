@@ -89,13 +89,12 @@ impl BodyEditor {
         if let Event::Paste(text) = event {
             if self.mode == EditorMode::Json {
                 let trimmed = text.trim();
-                if !trimmed.is_empty() {
-                    if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
-                        if let Ok(pretty) = serde_json::to_string_pretty(&value) {
-                            self.textarea.insert_str(&pretty);
-                            return true;
-                        }
-                    }
+                if !trimmed.is_empty()
+                    && let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed)
+                    && let Ok(pretty) = serde_json::to_string_pretty(&value)
+                {
+                    self.textarea.insert_str(&pretty);
+                    return true;
                 }
             }
             self.textarea.insert_str(text);
@@ -275,9 +274,7 @@ impl BodyEditor {
         if !self.enabled && self.mode == EditorMode::Json {
             let text = highlight_json(&self.value());
             frame.render_widget(
-                Paragraph::new(text)
-                    .block(block)
-                    .wrap(Wrap { trim: false }),
+                Paragraph::new(text).block(block).wrap(Wrap { trim: false }),
                 area,
             );
             return;

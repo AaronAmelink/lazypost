@@ -1,5 +1,5 @@
-use crate::model::items::Item;
 use crate::config::workspace::WorkspaceConfig;
+use crate::model::items::Item;
 use crate::{CONFIG_PATH, model::items::Request};
 use crossterm::event::{Event, KeyCode, KeyEventKind};
 use ratatui::{
@@ -97,8 +97,7 @@ impl Item {
                         p.push(ci);
                         p
                     };
-                    let child_selected_child = if child_selected
-                        && ctx.selected_child_path[0] == ci
+                    let child_selected_child = if child_selected && ctx.selected_child_path[0] == ci
                     {
                         &ctx.selected_child_path[1..]
                     } else {
@@ -171,12 +170,14 @@ impl Sidebar {
 
         match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
-                if let Some(next) = next_path(&self.items, &self.selected_path, &self.open_folders) {
+                if let Some(next) = next_path(&self.items, &self.selected_path, &self.open_folders)
+                {
                     self.selected_path = next;
                 }
             }
             KeyCode::Char('k') | KeyCode::Up => {
-                if let Some(prev) = prev_path(&self.items, &self.selected_path, &self.open_folders) {
+                if let Some(prev) = prev_path(&self.items, &self.selected_path, &self.open_folders)
+                {
                     self.selected_path = prev;
                 }
             }
@@ -199,7 +200,8 @@ impl Sidebar {
                             self.items.clone(),
                             Path::new(CONFIG_PATH),
                         );
-                        self.selected_path = path_at_flat(&self.items, flat_pos, &self.open_folders);
+                        self.selected_path =
+                            path_at_flat(&self.items, flat_pos, &self.open_folders);
                     }
                 }
             }
@@ -214,7 +216,8 @@ impl Sidebar {
                             self.items.clone(),
                             Path::new(CONFIG_PATH),
                         );
-                        self.selected_path = path_at_flat(&self.items, flat_pos, &self.open_folders);
+                        self.selected_path =
+                            path_at_flat(&self.items, flat_pos, &self.open_folders);
                     }
                 }
             }
@@ -295,28 +298,40 @@ fn item_at_path<'a>(items: &'a [Item], path: &[usize]) -> Option<&'a Item> {
 
 /// Flat traversal order for visible items — respects `open_folders` so closed
 /// folders don't expose their children to navigation.
-fn all_paths(items: &[Item], prefix: &[usize], open_folders: &HashSet<Vec<usize>>) -> Vec<Vec<usize>> {
+fn all_paths(
+    items: &[Item],
+    prefix: &[usize],
+    open_folders: &HashSet<Vec<usize>>,
+) -> Vec<Vec<usize>> {
     let mut out = Vec::new();
     for (i, item) in items.iter().enumerate() {
         let mut path = prefix.to_vec();
         path.push(i);
         out.push(path.clone());
-        if let Item::Folder(f) = item {
-            if open_folders.contains(&path) {
-                out.extend(all_paths(&f.items, &path, open_folders));
-            }
+        if let Item::Folder(f) = item
+            && open_folders.contains(&path)
+        {
+            out.extend(all_paths(&f.items, &path, open_folders));
         }
     }
     out
 }
 
-fn next_path(items: &[Item], current: &[usize], open_folders: &HashSet<Vec<usize>>) -> Option<Vec<usize>> {
+fn next_path(
+    items: &[Item],
+    current: &[usize],
+    open_folders: &HashSet<Vec<usize>>,
+) -> Option<Vec<usize>> {
     let all = all_paths(items, &[], open_folders);
     let pos = all.iter().position(|p| p == current)?;
     all.into_iter().nth(pos + 1)
 }
 
-fn prev_path(items: &[Item], current: &[usize], open_folders: &HashSet<Vec<usize>>) -> Option<Vec<usize>> {
+fn prev_path(
+    items: &[Item],
+    current: &[usize],
+    open_folders: &HashSet<Vec<usize>>,
+) -> Option<Vec<usize>> {
     let all = all_paths(items, &[], open_folders);
     let pos = all.iter().position(|p| p == current)?;
     if pos == 0 {
@@ -333,7 +348,11 @@ fn flat_position(items: &[Item], path: &[usize], open_folders: &HashSet<Vec<usiz
 
 /// After a deletion at flat position `deleted_pos`, select the item one above
 /// (clamped to the new list bounds).
-fn path_at_flat(items: &[Item], deleted_pos: usize, open_folders: &HashSet<Vec<usize>>) -> Vec<usize> {
+fn path_at_flat(
+    items: &[Item],
+    deleted_pos: usize,
+    open_folders: &HashSet<Vec<usize>>,
+) -> Vec<usize> {
     let all = all_paths(items, &[], open_folders);
     if all.is_empty() {
         return vec![];
@@ -405,7 +424,7 @@ fn insert_into_folder(
 }
 
 pub fn replace_request_at(
-    items: &mut Vec<Item>,
+    items: &mut [Item],
     path: &[usize],
     req: Request,
 ) -> Result<(), &'static str> {

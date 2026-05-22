@@ -92,9 +92,7 @@ pub fn highlight_json(input: &str) -> Text<'static> {
 
             '-' | '0'..='9' => {
                 let start = i;
-                while i < len
-                    && matches!(chars[i], '0'..='9' | '.' | '-' | '+' | 'e' | 'E')
-                {
+                while i < len && matches!(chars[i], '0'..='9' | '.' | '-' | '+' | 'e' | 'E') {
                     i += 1;
                 }
                 let num: String = chars[start..i].iter().collect();

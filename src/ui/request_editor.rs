@@ -9,13 +9,13 @@ use ratatui::widgets::{Block, BorderType, Paragraph, Tabs as TabsWidget};
 use ratatui::{Frame, symbols};
 use regex::Regex;
 
-use crate::ui::body_editor::{BodyEditor, EditorMode};
-use crate::ui::kv_row::{KvRow, render_input};
-use crate::ui::text_input::TextInput;
 use crate::model::items::{
     ApiKeyLocation, Auth, FileRef, FormField, FormValue, OAuth2Config, OAuth2Grant, QueryParam,
     Request, RequestBody, RequestType,
 };
+use crate::ui::body_editor::{BodyEditor, EditorMode};
+use crate::ui::kv_row::{KvRow, render_input};
+use crate::ui::text_input::TextInput;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
@@ -133,9 +133,8 @@ impl BodyKind {
 
 const API_KEY_LOCATIONS: &[ApiKeyLocation] = &[ApiKeyLocation::Header, ApiKeyLocation::Query];
 
-static URL_VAR_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"<\s*([A-Za-z0-9_.\-]+)\s*>").expect("url var regex")
-});
+static URL_VAR_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"<\s*([A-Za-z0-9_.\-]+)\s*>").expect("url var regex"));
 
 fn api_key_location_label(loc: &ApiKeyLocation) -> &'static str {
     match loc {
@@ -643,29 +642,47 @@ impl RequestEditor {
             Some(FocusId::CaptureText) => self.capture_editor.enable(),
             Some(FocusId::BodyFormRow(i, is_value)) => {
                 if let Some(r) = self.body_form_rows.get_mut(i) {
-                    if is_value { r.value.enable(); } else { r.key.enable(); }
+                    if is_value {
+                        r.value.enable();
+                    } else {
+                        r.key.enable();
+                    }
                 }
             }
             Some(FocusId::BodyMultipartKey(i)) => {
-                if let Some(r) = self.body_multipart_rows.get_mut(i) { r.key.enable(); }
+                if let Some(r) = self.body_multipart_rows.get_mut(i) {
+                    r.key.enable();
+                }
             }
             Some(FocusId::BodyMultipartValue(i)) => {
-                if let Some(r) = self.body_multipart_rows.get_mut(i) { r.value.enable(); }
+                if let Some(r) = self.body_multipart_rows.get_mut(i) {
+                    r.value.enable();
+                }
             }
             Some(FocusId::ParamKey(i)) => {
-                if let Some(r) = self.param_rows.get_mut(i) { r.key.enable(); }
+                if let Some(r) = self.param_rows.get_mut(i) {
+                    r.key.enable();
+                }
             }
             Some(FocusId::ParamValue(i)) => {
-                if let Some(r) = self.param_rows.get_mut(i) { r.value.enable(); }
+                if let Some(r) = self.param_rows.get_mut(i) {
+                    r.value.enable();
+                }
             }
             Some(FocusId::UrlVarValue(i)) => {
-                if let Some(r) = self.url_var_rows.get_mut(i) { r.value.enable(); }
+                if let Some(r) = self.url_var_rows.get_mut(i) {
+                    r.value.enable();
+                }
             }
             Some(FocusId::HeaderKey(i)) => {
-                if let Some(r) = self.header_rows.get_mut(i) { r.key.enable(); }
+                if let Some(r) = self.header_rows.get_mut(i) {
+                    r.key.enable();
+                }
             }
             Some(FocusId::HeaderValue(i)) => {
-                if let Some(r) = self.header_rows.get_mut(i) { r.value.enable(); }
+                if let Some(r) = self.header_rows.get_mut(i) {
+                    r.value.enable();
+                }
             }
             _ => {}
         }
@@ -673,45 +690,91 @@ impl RequestEditor {
 
     fn forward_to_active_input(&mut self, event: &Event) {
         match self.focused {
-            Some(FocusId::NameInput) => { self.name_input.handle_event(event); }
-            Some(FocusId::UrlInput) => { self.url_input.handle_event(event); }
-            Some(FocusId::AuthBearerToken) => { self.auth_bearer_token.handle_event(event); }
-            Some(FocusId::AuthBasicUser) => { self.auth_basic_user.handle_event(event); }
-            Some(FocusId::AuthBasicPass) => { self.auth_basic_pass.handle_event(event); }
-            Some(FocusId::AuthApiKey) => { self.auth_api_key.handle_event(event); }
-            Some(FocusId::AuthApiValue) => { self.auth_api_value.handle_event(event); }
-            Some(FocusId::AuthOAuth2ClientId) => { self.oauth2_client_id.handle_event(event); }
-            Some(FocusId::AuthOAuth2ClientSecret) => { self.oauth2_client_secret.handle_event(event); }
-            Some(FocusId::AuthOAuth2TokenUrl) => { self.oauth2_token_url.handle_event(event); }
-            Some(FocusId::AuthOAuth2Scopes) => { self.oauth2_scopes.handle_event(event); }
-            Some(FocusId::AuthOAuth2RefreshToken) => { self.oauth2_refresh_token.handle_event(event); }
-            Some(FocusId::BodyText) => { self.body_editor.handle_event(event); }
-            Some(FocusId::CaptureText) => { self.capture_editor.handle_event(event); }
+            Some(FocusId::NameInput) => {
+                self.name_input.handle_event(event);
+            }
+            Some(FocusId::UrlInput) => {
+                self.url_input.handle_event(event);
+            }
+            Some(FocusId::AuthBearerToken) => {
+                self.auth_bearer_token.handle_event(event);
+            }
+            Some(FocusId::AuthBasicUser) => {
+                self.auth_basic_user.handle_event(event);
+            }
+            Some(FocusId::AuthBasicPass) => {
+                self.auth_basic_pass.handle_event(event);
+            }
+            Some(FocusId::AuthApiKey) => {
+                self.auth_api_key.handle_event(event);
+            }
+            Some(FocusId::AuthApiValue) => {
+                self.auth_api_value.handle_event(event);
+            }
+            Some(FocusId::AuthOAuth2ClientId) => {
+                self.oauth2_client_id.handle_event(event);
+            }
+            Some(FocusId::AuthOAuth2ClientSecret) => {
+                self.oauth2_client_secret.handle_event(event);
+            }
+            Some(FocusId::AuthOAuth2TokenUrl) => {
+                self.oauth2_token_url.handle_event(event);
+            }
+            Some(FocusId::AuthOAuth2Scopes) => {
+                self.oauth2_scopes.handle_event(event);
+            }
+            Some(FocusId::AuthOAuth2RefreshToken) => {
+                self.oauth2_refresh_token.handle_event(event);
+            }
+            Some(FocusId::BodyText) => {
+                self.body_editor.handle_event(event);
+            }
+            Some(FocusId::CaptureText) => {
+                self.capture_editor.handle_event(event);
+            }
             Some(FocusId::BodyFormRow(i, is_value)) => {
                 if let Some(r) = self.body_form_rows.get_mut(i) {
-                    if is_value { r.value.handle_event(event); } else { r.key.handle_event(event); }
+                    if is_value {
+                        r.value.handle_event(event);
+                    } else {
+                        r.key.handle_event(event);
+                    }
                 }
             }
             Some(FocusId::BodyMultipartKey(i)) => {
-                if let Some(r) = self.body_multipart_rows.get_mut(i) { r.key.handle_event(event); }
+                if let Some(r) = self.body_multipart_rows.get_mut(i) {
+                    r.key.handle_event(event);
+                }
             }
             Some(FocusId::BodyMultipartValue(i)) => {
-                if let Some(r) = self.body_multipart_rows.get_mut(i) { r.value.handle_event(event); }
+                if let Some(r) = self.body_multipart_rows.get_mut(i) {
+                    r.value.handle_event(event);
+                }
             }
             Some(FocusId::ParamKey(i)) => {
-                if let Some(r) = self.param_rows.get_mut(i) { r.key.handle_event(event); }
+                if let Some(r) = self.param_rows.get_mut(i) {
+                    r.key.handle_event(event);
+                }
             }
             Some(FocusId::ParamValue(i)) => {
-                if let Some(r) = self.param_rows.get_mut(i) { r.value.handle_event(event); }
+                if let Some(r) = self.param_rows.get_mut(i) {
+                    r.value.handle_event(event);
+                }
             }
             Some(FocusId::UrlVarValue(i)) => {
-                if let Some(r) = self.url_var_rows.get_mut(i) { r.value.handle_event(event); }
+                if let Some(r) = self.url_var_rows.get_mut(i) {
+                    r.value.handle_event(event);
+                }
             }
             Some(FocusId::HeaderKey(i)) => {
-                if let Some(r) = self.header_rows.get_mut(i) { r.key.handle_event(event); }
+                if let Some(r) = self.header_rows.get_mut(i) {
+                    r.key.handle_event(event);
+                }
             }
             Some(FocusId::HeaderValue(i)) => {
-                if let Some(r) = self.header_rows.get_mut(i) { r.value.handle_event(event); }
+                if let Some(r) = self.header_rows.get_mut(i) {
+                    r.value.handle_event(event);
+                }
             }
             _ => {}
         }
@@ -871,49 +934,73 @@ impl RequestEditor {
         match (self.active_tab(), self.focused) {
             (Tab::Params, Some(FocusId::ParamEnabled(i))) => {
                 let len = self.param_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::ParamEnabled(next as usize));
                 true
             }
             (Tab::Params, Some(FocusId::ParamKey(i))) => {
                 let len = self.param_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::ParamKey(next as usize));
                 true
             }
             (Tab::Params, Some(FocusId::ParamValue(i))) => {
                 let len = self.param_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::ParamValue(next as usize));
                 true
             }
             (Tab::UrlVars, Some(FocusId::UrlVarValue(i))) => {
                 let len = self.url_var_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::UrlVarValue(next as usize));
                 true
             }
             (Tab::Headers, Some(FocusId::HeaderKey(i))) => {
                 let len = self.header_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::HeaderKey(next as usize));
                 true
             }
             (Tab::Headers, Some(FocusId::HeaderValue(i))) => {
                 let len = self.header_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::HeaderValue(next as usize));
                 true
             }
@@ -921,9 +1008,13 @@ impl RequestEditor {
                 if BODY_KINDS[self.body_kind_index] == BodyKind::Form =>
             {
                 let len = self.body_form_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::BodyFormRow(next as usize, is_value));
                 true
             }
@@ -931,9 +1022,13 @@ impl RequestEditor {
                 if BODY_KINDS[self.body_kind_index] == BodyKind::Multipart =>
             {
                 let len = self.body_multipart_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::BodyMultipartKind(next as usize));
                 true
             }
@@ -941,9 +1036,13 @@ impl RequestEditor {
                 if BODY_KINDS[self.body_kind_index] == BodyKind::Multipart =>
             {
                 let len = self.body_multipart_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::BodyMultipartKey(next as usize));
                 true
             }
@@ -951,9 +1050,13 @@ impl RequestEditor {
                 if BODY_KINDS[self.body_kind_index] == BodyKind::Multipart =>
             {
                 let len = self.body_multipart_rows.len();
-                if len == 0 { return false; }
+                if len == 0 {
+                    return false;
+                }
                 let next = i as isize + delta;
-                if next < 0 || next >= len as isize { return false; }
+                if next < 0 || next >= len as isize {
+                    return false;
+                }
                 self.focused = Some(FocusId::BodyMultipartValue(next as usize));
                 true
             }
@@ -1009,7 +1112,11 @@ impl RequestEditor {
             AuthKind::None => None,
             AuthKind::Bearer => {
                 let t = self.auth_bearer_token.value().to_string();
-                if t.is_empty() { None } else { Some(Auth::Bearer { token: t }) }
+                if t.is_empty() {
+                    None
+                } else {
+                    Some(Auth::Bearer { token: t })
+                }
             }
             AuthKind::Basic => Some(Auth::Basic {
                 username: self.auth_basic_user.value().to_string(),
@@ -1051,7 +1158,11 @@ impl RequestEditor {
             BodyKind::None => None,
             BodyKind::Raw => {
                 let s = self.body_editor.value();
-                if s.trim().is_empty() { None } else { Some(RequestBody::Raw(s)) }
+                if s.trim().is_empty() {
+                    None
+                } else {
+                    Some(RequestBody::Raw(s))
+                }
             }
             BodyKind::Json => {
                 let s = self.body_editor.value();
@@ -1074,10 +1185,18 @@ impl RequestEditor {
                     .iter()
                     .filter_map(|r| {
                         let k = r.key.value().to_string();
-                        if k.is_empty() { None } else { Some((k, r.value.value().to_string())) }
+                        if k.is_empty() {
+                            None
+                        } else {
+                            Some((k, r.value.value().to_string()))
+                        }
                     })
                     .collect();
-                if map.is_empty() { None } else { Some(RequestBody::Form(map)) }
+                if map.is_empty() {
+                    None
+                } else {
+                    Some(RequestBody::Form(map))
+                }
             }
             BodyKind::Multipart => {
                 let fields: Vec<FormField> = self
@@ -1099,7 +1218,11 @@ impl RequestEditor {
                         Some(FormField { key: k, value: v })
                     })
                     .collect();
-                if fields.is_empty() { None } else { Some(RequestBody::Multipart(fields)) }
+                if fields.is_empty() {
+                    None
+                } else {
+                    Some(RequestBody::Multipart(fields))
+                }
             }
         };
 
@@ -1142,7 +1265,11 @@ impl RequestEditor {
             .iter()
             .filter_map(|r| {
                 let k = r.key.value().to_string();
-                if k.is_empty() { None } else { Some((k, r.value.value().to_string())) }
+                if k.is_empty() {
+                    None
+                } else {
+                    Some((k, r.value.value().to_string()))
+                }
             })
             .collect();
 
@@ -1152,14 +1279,30 @@ impl RequestEditor {
         };
 
         Ok(Request {
-            name: if name.is_empty() { "Unnamed".into() } else { name },
+            name: if name.is_empty() {
+                "Unnamed".into()
+            } else {
+                name
+            },
             request_type: method,
             url,
-            headers: if headers.is_empty() { None } else { Some(headers) },
+            headers: if headers.is_empty() {
+                None
+            } else {
+                Some(headers)
+            },
             body,
             auth,
-            params: if params.is_empty() { None } else { Some(params) },
-            url_vars: if url_vars.is_empty() { None } else { Some(url_vars) },
+            params: if params.is_empty() {
+                None
+            } else {
+                Some(params)
+            },
+            url_vars: if url_vars.is_empty() {
+                None
+            } else {
+                Some(url_vars)
+            },
             capture,
         })
     }
@@ -1209,8 +1352,7 @@ impl RequestEditor {
                         (self.api_key_location_index + 1) % API_KEY_LOCATIONS.len();
                 }
                 Some(FocusId::AuthOAuth2Grant) => {
-                    self.oauth2_grant_index =
-                        (self.oauth2_grant_index + 1) % OAUTH2_GRANTS.len();
+                    self.oauth2_grant_index = (self.oauth2_grant_index + 1) % OAUTH2_GRANTS.len();
                 }
                 Some(FocusId::BodyKindSelector) => {
                     self.body_kind_index = (self.body_kind_index + 1) % BODY_KINDS.len();
@@ -1259,8 +1401,7 @@ impl RequestEditor {
                 }
                 match self.focused {
                     Some(FocusId::MethodSelector) => {
-                        self.method_index =
-                            (self.method_index + METHODS.len() - 1) % METHODS.len();
+                        self.method_index = (self.method_index + METHODS.len() - 1) % METHODS.len();
                     }
                     Some(FocusId::AuthKindSelector) => {
                         self.auth_kind_index =
@@ -1272,9 +1413,9 @@ impl RequestEditor {
                                 % API_KEY_LOCATIONS.len();
                     }
                     Some(FocusId::AuthOAuth2Grant) => {
-                        self.oauth2_grant_index =
-                            (self.oauth2_grant_index + OAUTH2_GRANTS.len() - 1)
-                                % OAUTH2_GRANTS.len();
+                        self.oauth2_grant_index = (self.oauth2_grant_index + OAUTH2_GRANTS.len()
+                            - 1)
+                            % OAUTH2_GRANTS.len();
                     }
                     Some(FocusId::BodyKindSelector) => {
                         self.body_kind_index =
@@ -1460,11 +1601,8 @@ impl RequestEditor {
     }
 
     pub fn render_request_header(&self, frame: &mut Frame, area: Rect) {
-        let [method_rect, url_rect] = Layout::vertical([
-            Constraint::Length(3),
-            Constraint::Length(3),
-        ])
-        .areas(area);
+        let [method_rect, url_rect] =
+            Layout::vertical([Constraint::Length(3), Constraint::Length(3)]).areas(area);
 
         self.render_method_row(frame, method_rect);
 
@@ -1623,10 +1761,7 @@ impl RequestEditor {
                     frame,
                     chunks[1],
                     " Grant Type (e/h/l) ",
-                    OAUTH2_GRANTS
-                        .iter()
-                        .map(oauth2_grant_label)
-                        .collect(),
+                    OAUTH2_GRANTS.iter().map(oauth2_grant_label).collect(),
                     self.oauth2_grant_index,
                     self.focused == Some(FocusId::AuthOAuth2Grant),
                 );

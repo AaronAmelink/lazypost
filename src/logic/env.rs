@@ -9,6 +9,7 @@ static VAR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{\{\s*([A-Za-z0-9_.\-]+)
 
 /// Expands `{{name}}` placeholders in `s` using the provided variable map.
 /// Missing variables expand to an empty string, never `panic!()`.
+#[allow(dead_code)]
 pub fn substitute(s: &str, vars: &HashMap<String, String>) -> String {
     VAR_RE
         .replace_all(s, |c: &regex::Captures| {
@@ -49,10 +50,16 @@ pub fn substitute_required(s: &str, vars: &HashMap<String, String>) -> Result<St
     } else {
         let mut parts = Vec::new();
         if !missing.is_empty() {
-            parts.push(format!("missing env vars: {}", missing.into_iter().collect::<Vec<_>>().join(", ")));
+            parts.push(format!(
+                "missing env vars: {}",
+                missing.into_iter().collect::<Vec<_>>().join(", ")
+            ));
         }
         if !empty.is_empty() {
-            parts.push(format!("empty env vars: {}", empty.into_iter().collect::<Vec<_>>().join(", ")));
+            parts.push(format!(
+                "empty env vars: {}",
+                empty.into_iter().collect::<Vec<_>>().join(", ")
+            ));
         }
         Err(parts.join("; "))
     }
@@ -124,7 +131,10 @@ mod tests {
     fn no_placeholders_passes_through_unchanged() {
         let v = vars(&[("x", "1")]);
         assert_eq!(substitute("plain string", &v), "plain string");
-        assert_eq!(substitute_required("plain string", &v).unwrap(), "plain string");
+        assert_eq!(
+            substitute_required("plain string", &v).unwrap(),
+            "plain string"
+        );
     }
 
     #[test]

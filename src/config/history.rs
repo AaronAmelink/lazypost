@@ -11,8 +11,8 @@ use ratatui::widgets::{Block, BorderType, Clear, Paragraph};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::net::http_client::ExecutedResponse;
 use crate::model::items::Request;
+use crate::net::http_client::ExecutedResponse;
 
 const DEFAULT_CAP: usize = 500;
 const INLINE_BODY_CAP: usize = 256 * 1024;
