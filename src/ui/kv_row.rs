@@ -1,4 +1,3 @@
-use crossterm::event::Event;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
@@ -58,14 +57,4 @@ pub fn render_input(
             .title(input.title.clone()),
         area,
     );
-}
-
-/// Forwards a crossterm event to the key or value input of a row, depending on
-/// which column is focused.
-pub fn forward_event_to_kv(row: &mut KvRow, event: &Event, is_value: bool) {
-    if is_value {
-        row.value.handle_event(event);
-    } else {
-        row.key.handle_event(event);
-    }
 }

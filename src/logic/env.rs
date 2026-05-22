@@ -7,16 +7,6 @@ use regex::Regex;
 /// Whitespace inside the braces is tolerated.
 static VAR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{\{\s*([A-Za-z0-9_.\-]+)\s*\}\}").unwrap());
 
-/// Expands `{{name}}` placeholders in `s` using the provided variable map.
-/// Missing variables expand to an empty string, never `panic!()`.
-pub fn substitute(s: &str, vars: &HashMap<String, String>) -> String {
-    VAR_RE
-        .replace_all(s, |c: &regex::Captures| {
-            vars.get(&c[1]).cloned().unwrap_or_default()
-        })
-        .into_owned()
-}
-
 /// Expands `{{name}}` placeholders, but returns an error if any referenced
 /// variable is missing or empty.
 pub fn substitute_required(s: &str, vars: &HashMap<String, String>) -> Result<String, String> {

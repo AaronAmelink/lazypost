@@ -5,6 +5,16 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+/// Returns `~/lazypost/env/{cwd}/env.json`, falling back to `./env.json`.
+pub fn env_path_for_cwd() -> PathBuf {
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let rel = cwd.strip_prefix("/").unwrap_or(&cwd);
+    home.join("lazypost").join("env").join(rel).join("env.json")
+}
+
 /// Persistent store for environment variables. Lives in its own file
 /// (default `env.json`) so it can be gitignored — values frequently contain
 /// secrets like API tokens that should never end up in a shared workspace

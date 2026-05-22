@@ -33,6 +33,13 @@ impl WorkspaceConfig {
         }
     }
 
+    pub fn new_with_path(path: &Path) -> Self {
+        Self {
+            data: WorkspaceFile::empty(),
+            path: path.to_path_buf(),
+        }
+    }
+
     pub fn create_from_file(path: &Path) -> std::io::Result<Self> {
         let data = if path.exists() {
             let file = File::open(path)?;

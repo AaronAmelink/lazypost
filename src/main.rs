@@ -7,9 +7,10 @@ use crossterm::event::{
     self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEventKind,
     KeyModifiers,
 };
-use config::env_config::EnvConfig;
+use config::env_config::{EnvConfig, env_path_for_cwd};
 use ui::environment_editor::EnvironmentEditor;
 use ui::help_overlay::HelpOverlay;
+use ui::init_modal::{InitModal, InitAction};
 use config::history::{History, HistoryAction};
 use net::http_client::{self, ExecutedResponse, HttpError};
 use model::items::{ConfigFolder, Item, Request, RequestType};
@@ -28,8 +29,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 
 use crate::ui::add_item_widget::AddItemWidget;
 
-const CONFIG_PATH: &str = "workspace.json";
-const ENV_PATH: &str = "env.json";
+const CONFIG_PATH: &str = "lazypost-workspace.json";
 
 pub enum AppMsg {
     ResponseReady(Result<ExecutedResponse, HttpError>),
@@ -81,6 +81,7 @@ struct App {
     history_open: bool,
     last_sent_request: Option<Request>,
     help: HelpOverlay,
+    init_modal: Option<InitModal>,
 }
 
 impl App {
@@ -94,7 +95,7 @@ impl App {
             sidebar: Sidebar::new(default_items()),
             add_item_widget: None,
             config: WorkspaceConfig::new_empty(),
-            env_config: EnvConfig::load(Path::new(ENV_PATH)),
+            env_config: EnvConfig::load(&env_path_for_cwd()),
             runtime,
             tx,
             rx,
@@ -112,6 +113,7 @@ impl App {
             history_open: false,
             last_sent_request: None,
             help: HelpOverlay::new(),
+            init_modal: None,
         }
     }
 
@@ -274,6 +276,22 @@ impl App {
     }
 
     fn handle_events(&mut self, event: &Event) -> Result<bool, &'static str> {
+        // Init modal blocks all interaction until workspace is initialized.
+        if let Some(ref modal) = self.init_modal {
+            match modal.handle_event(event) {
+                InitAction::Confirm => {
+                    self.init_modal = None;
+                    self.config.data.items = default_items();
+                    let _ = self.config.save();
+                    self.sidebar.items = self.config.data.items.clone();
+                    self.sync_editor_with_selection();
+                }
+                InitAction::Cancel => return Ok(false),
+                InitAction::None => {}
+            }
+            return Ok(true);
+        }
+
         if matches!(event, Event::Paste(_)) {
             if let Some(widget) = &mut self.add_item_widget {
                 if widget.is_editing() {
@@ -504,15 +522,20 @@ fn default_items() -> Vec<Item> {
 }
 
 fn main() {
+    let config_path = Path::new(CONFIG_PATH);
     let mut app = App::new();
-    app.config = WorkspaceConfig::create_from_file(Path::new(CONFIG_PATH))
-        .unwrap_or_else(|_| WorkspaceConfig::new_empty());
 
-    if app.config.data.items.is_empty() {
-        app.config.data.items = default_items();
-        let _ = app.config.save();
-    } else {
+    if config_path.exists() {
+        app.config = WorkspaceConfig::create_from_file(config_path)
+            .unwrap_or_else(|_| WorkspaceConfig::new_empty());
+        if app.config.data.items.is_empty() {
+            app.config.data.items = default_items();
+            let _ = app.config.save();
+        }
         app.sidebar.items = app.config.data.items.clone();
+    } else {
+        app.config = WorkspaceConfig::new_with_path(config_path);
+        app.init_modal = Some(InitModal::new());
     }
 
     app.sync_editor_with_selection();
@@ -666,6 +689,9 @@ fn render(frame: &mut ratatui::Frame, app: &mut App) {
     }
     if app.help.open {
         app.help.render(frame, frame.area());
+    }
+    if let Some(modal) = &app.init_modal {
+        modal.render_modal(frame, frame.area());
     }
 }
 

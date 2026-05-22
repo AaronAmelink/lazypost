@@ -6,64 +6,67 @@ config file to hand-write.
 
 ## Install
 
-Requires Rust 1.85+ (uses edition 2024).
-
 ```sh
-cargo install --path .
+curl -sSf https://raw.githubusercontent.com/aaron-amelink/lazypost/main/install.sh | sh
 ```
 
-This drops the `lazypost` binary into `~/.cargo/bin/`. Make sure that directory
-is on your `PATH` (rustup adds it by default; if not, add it to your shell rc).
-After install, run `lazypost` from any directory.
+Or clone and run the script directly:
 
-Because lazypost reads and writes its state files **in the current working
-directory** (not next to the binary), each project gets its own isolated
-workspace.
+```sh
+git clone https://github.com/aaron-amelink/lazypost
+cd lazypost
+./install.sh
+```
 
-### For local Development
+Requires Rust 1.85+ (edition 2024). The script checks your version and prints
+upgrade instructions if needed. The binary lands in `~/.cargo/bin/lazypost`.
+
+After install, run `lazypost` from any project directory.
+
+### Local development
 
 ```sh
 cargo run --release
 ```
 
-Runs against `workspace.json` / `env.json` / `history.json` in the repo root.
-
 ## Quick start
+
+On first launch in a new directory, lazypost prompts you to initialize a
+workspace. Press `y` to confirm — this creates `lazypost-workspace.json` with
+a set of example requests to get you started.
 
 ```
 n           open the "new request" modal
 e           edit the focused field; Esc to stop editing
 [ / ]       cycle sub-tabs (Info / Auth / Body / Params / Headers / Capture)
-Enter       (in modal) save the new request
+Enter       (in modal) confirm
 s           send the selected request
 w           save the editor's changes
 ?           show full keybind reference
 q           quit
 ```
 
-A workspace ships with example requests on first launch. Pick one with `j`/`k`
-in the sidebar, jump to the editor with `2`, then send with `s` (or from the
-sidebar — `s` works there too).
+Pick a request with `j`/`k` in the sidebar, jump to the editor with `2`, fill
+in a URL, then send with `s`.
 
 ## Files on disk
 
-Lazypost reads and writes three files in the **current working directory** —
-wherever you launched it from, not next to the binary. This is what makes
-per-directory workspaces possible.
+| File                      | Location                  | Committed? | Contents                                          |
+|---------------------------|---------------------------|------------|---------------------------------------------------|
+| `lazypost-workspace.json` | current directory         | yes        | Request tree (folders, methods, URLs, bodies)     |
+| `env.json`                | `~/lazypost/env/{cwd}/`   | —          | Environment variables (API keys, tokens, etc.)    |
+| `history.json`            | current directory         | no         | Last 500 sent requests + responses (capped 256 KB)|
 
-| File             | Committed? | Contents                                            |
-|------------------|------------|-----------------------------------------------------|
-| `workspace.json` | yes        | The request tree (folders, methods, URLs, bodies)   |
-| `env.json`       | **no**     | Environment variables — frequently hold secrets     |
-| `history.json`   | **no**     | Last 500 sent requests + responses (capped 256KB)   |
-
+`lazypost-workspace.json` is safe to commit — it contains no secrets. Environment
+variables are stored outside the project tree entirely (`~/lazypost/env/` mirroring
+your working directory path), so they can never be accidentally committed.
 
 ## Environment variables (`E`)
 
-Open with `E`. A single flat `key=value` table, stored in `env.json`. The
-status bar shows the variable count.
+Open the editor with `E`. A flat `key=value` table; the status bar shows the
+current variable count.
 
-Reference variables anywhere in URL / headers / params / body / auth fields:
+Reference variables anywhere in URL, headers, params, body, and auth fields:
 
 ```
 URL:     {{base_url}}/users/{{user_id}}
@@ -74,62 +77,55 @@ Body:    {"id": "{{user_id}}"}
 Missing or empty variables cause a request error.
 
 ```
-j / k            navigate fields
-e                edit focused field
-a / d            add / delete a variable row
-Enter            save and close
-Esc              cancel
+j / k        navigate rows
+e            edit focused field
+a / d        add / delete a row
+Enter        save and close
+Esc          cancel
 ```
 
 ## URL variables
 
-On the **URL Vars** tab, define key/value pairs and reference them in the URL as
-`<key>`. Whitespace inside the brackets is allowed (`< key >`). Values are
+On the **URL Vars** tab, define key/value pairs and reference them in the URL
+as `<key>`. Whitespace inside the brackets is allowed (`< key >`). Values are
 URL-encoded when inserted. Missing or empty URL vars cause a request error.
 
-## Capture templates ("predicted response")
+## Capture templates
 
-Each request has a **Capture** sub-tab. Put a JSON template using `%name%`
-placeholders. After the request runs, the template is walked in parallel with
-the actual response body; matched values are written to the env vars list
-(visible when you press `E`).
+Each request has a **Capture** sub-tab. Write a JSON template using `%name%`
+placeholders. After the request runs, the template is matched against the
+response body and matched values are written to the env vars table.
 
 Template:
-
 ```json
 { "item": { "id": "%item_id%", "slug": "%slug%" } }
 ```
 
 Response:
-
 ```json
 { "item": { "id": 42, "slug": "hello" } }
 ```
 
-After the response arrives, the env vars gain `item_id=42` and `slug=hello`.
+After the response arrives, env vars gain `item_id=42` and `slug=hello`.
 Subsequent requests can reference `{{item_id}}` and `{{slug}}`.
 
-Placeholders can also be embedded in literal strings:
-
+Placeholders can also be embedded in strings:
 ```json
 { "auth": "Bearer %key%" }
 ```
-
-against an actual response of `{"auth": "Bearer abc123"}` captures `key=abc123`.
-Multiple placeholders per string are supported (`"%user%:%pass%"`).
+against `{"auth": "Bearer abc123"}` captures `key=abc123`. Multiple placeholders
+per string are supported (`"%user%:%pass%"`).
 
 Rules:
 - Whole-string placeholders (`"%x%"`) capture any JSON value at that position.
-- Mixed strings (`"Bearer %key%"`) only match when the actual value is a
-  string with the same literal prefix/suffix.
-- Capture is skipped silently if the response isn't JSON. The status bar
-  reports what happened (`captured: item_id, slug` or `capture: nothing matched`).
+- Mixed strings (`"Bearer %key%"`) only match string values with the same literal prefix/suffix.
+- Capture is skipped silently if the response is not JSON; the status bar reports the outcome.
 
 ## History (`H`)
 
 ```
 j / k     navigate entries (newest first)
-Enter     restore the request + response into the editor pane
+Enter     restore request + response into the editor
 d         delete the highlighted entry
 D         clear all history
 Esc / H   close
@@ -139,45 +135,39 @@ Capped at 500 entries; bodies over 256 KB are truncated for storage.
 
 ## Auth types
 
-| Kind     | Sent as                                              |
-|----------|------------------------------------------------------|
-| None     | nothing                                              |
-| Bearer   | `Authorization: Bearer <token>`                      |
-| Basic    | `Authorization: Basic base64(user:pass)`             |
-| API Key  | header `<key>: <value>`, or `?<key>=<value>`         |
+| Kind    | Sent as                                          |
+|---------|--------------------------------------------------|
+| None    | nothing                                          |
+| Bearer  | `Authorization: Bearer <token>`                  |
+| Basic   | `Authorization: Basic base64(user:pass)`         |
+| API Key | header `<key>: <value>`, or `?<key>=<value>`     |
 
-API Key location is toggled on the editor's Auth sub-tab with `e` / `h` / `l`.
+API Key location (header vs. query param) is toggled on the Auth sub-tab with `h` / `l`.
 
 ## Body types
 
-| Kind       | Sent as                                                            |
-|------------|--------------------------------------------------------------------|
-| None       | no body                                                            |
-| Raw        | the literal text, no Content-Type set                              |
-| JSON       | the text parsed as JSON, `Content-Type: application/json`          |
-| Form       | `application/x-www-form-urlencoded`                                |
-| Multipart  | `multipart/form-data`; rows toggle between text and a file path    |
+| Kind      | Sent as                                                         |
+|-----------|-----------------------------------------------------------------|
+| None      | no body                                                         |
+| Raw       | literal text, no Content-Type                                   |
+| JSON      | parsed as JSON, `Content-Type: application/json`                |
+| Form      | `application/x-www-form-urlencoded`                             |
+| Multipart | `multipart/form-data`; rows toggle between text and file path   |
 
 JSON bodies are validated on save. Invalid JSON blocks the save and shows the
-parser error at the bottom of the editor.
+parser error in the editor.
 
 ## Development
 
 ```sh
 cargo fmt
-cargo clippy --all-targets   # currently lint-clean
-cargo test                   # capture template + env substitution unit tests
-cargo run                    # dev build, attached to your terminal
+cargo clippy --all-targets
+cargo test
+cargo run
 ```
 
-The codebase is a single binary crate: `main.rs` wires the ratatui loop and
-event routing; everything else lives under `src/helpers/`. Async HTTP runs on
-a multi-thread tokio runtime; responses come back to the UI thread through
-`tokio::sync::mpsc`, so the render loop never blocks.
-
-## What's intentionally missing
-
-- OAuth2 (model exists, no UI yet)
-- Request import/export (Postman/Insomnia collections)
-- Cookies / sessions
-- Mouse support — keyboard-only by design
+Single binary crate. `src/main.rs` wires the ratatui event loop and pane
+routing. Modules: `config/` (workspace, env, history), `ui/` (widgets and
+modals), `net/` (HTTP client, OAuth), `logic/` (variable substitution,
+capture), `model/` (data types). Async HTTP runs on a tokio multi-thread
+runtime; responses arrive via `mpsc` so the render loop never blocks.

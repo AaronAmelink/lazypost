@@ -1,4 +1,5 @@
 pub mod add_item_widget;
+pub mod init_modal;
 pub mod json_highlight;
 pub mod body_editor;
 pub mod environment_editor;
