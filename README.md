@@ -6,11 +6,13 @@ config file to hand-write.
 
 ## Install
 
+Requires Rust 1.85+ ([rustup](https://rustup.rs)).
+
 ```sh
-curl -sSf https://raw.githubusercontent.com/aaron-amelink/lazypost/main/install.sh | sh
+cargo install --git https://github.com/aaron-amelink/lazypost
 ```
 
-Or clone and run the script directly:
+Or clone and build manually:
 
 ```sh
 git clone https://github.com/aaron-amelink/lazypost
@@ -18,10 +20,7 @@ cd lazypost
 ./install.sh
 ```
 
-Requires Rust 1.85+ (edition 2024). The script checks your version and prints
-upgrade instructions if needed. The binary lands in `~/.cargo/bin/lazypost`.
-
-After install, run `lazypost` from any project directory.
+The binary lands in `~/.cargo/bin/lazypost`. Run `lazypost` from any project directory.
 
 ### Local development
 
