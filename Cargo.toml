@@ -1,6 +1,6 @@
 [package]
 name = "lazypost"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A keyboard-driven terminal HTTP client. Postman in a TUI."
 readme = "README.md"
