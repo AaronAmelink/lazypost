@@ -111,6 +111,9 @@ impl History {
     }
 
     pub fn save(&self) -> std::io::Result<()> {
+        if let Some(parent) = self.path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         let file = HistoryFile {
             entries: self.entries.clone(),
         };

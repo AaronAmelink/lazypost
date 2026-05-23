@@ -6,18 +6,19 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-/// Returns `~/.config/lazypost/.env/{cwd_folder_name}/.env.json`.
-pub fn env_path_for_cwd() -> PathBuf {
+/// Returns `~/.config/lazypost/env/{cwd_folder_name}/`.
+pub fn project_dir_for_cwd() -> PathBuf {
     let home = std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."));
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let folder_name = cwd.file_name().unwrap_or(cwd.as_os_str());
-    home.join(".config")
-        .join("lazypost")
-        .join(".env")
-        .join(folder_name)
-        .join(".env.json")
+    home.join(".config").join("lazypost").join("env").join(folder_name)
+}
+
+/// Returns `~/.config/lazypost/env/{cwd_folder_name}/.env`.
+pub fn env_path_for_cwd() -> PathBuf {
+    project_dir_for_cwd().join(".env")
 }
 
 /// Persistent store for environment variables. Lives in its own file

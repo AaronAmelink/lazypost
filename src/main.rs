@@ -3,7 +3,7 @@ mod logic;
 mod model;
 mod net;
 mod ui;
-use config::env_config::{EnvConfig, env_path_for_cwd};
+use config::env_config::{EnvConfig, env_path_for_cwd, project_dir_for_cwd};
 use config::history::{History, HistoryAction};
 use config::workspace::WorkspaceConfig;
 use crossterm::event::{
@@ -108,7 +108,7 @@ impl App {
             spinner_tick: 0,
             last_spin: std::time::Instant::now(),
             env_editor: None,
-            history: History::load(Path::new(".")),
+            history: History::load(&project_dir_for_cwd()),
             history_open: false,
             last_sent_request: None,
             help: HelpOverlay::new(),

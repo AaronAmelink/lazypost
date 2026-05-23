@@ -1,6 +1,10 @@
 # lazypost
 
-A TUI HTTP client. Still a WIP
+[![Crates.io](https://img.shields.io/crates/v/lazypost)](https://crates.io/crates/lazypost)
+[![CI](https://github.com/aaron-amelink/lazypost/actions/workflows/ci.yml/badge.svg)](https://github.com/aaron-amelink/lazypost/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+A TUI HTTP client.
 
 ## Install
 
@@ -48,15 +52,16 @@ in a URL, then send with `s`.
 
 ## Files on disk
 
-| File                      | Location                  | Committed? | Contents                                          |
-|---------------------------|---------------------------|------------|---------------------------------------------------|
-| `lazypost-workspace.json` | current directory         | yes        | Request tree (folders, methods, URLs, bodies)     |
-| `env.json`                | `~/lazypost/env/{cwd}/`   | —          | Environment variables (API keys, tokens, etc.)    |
-| `history.json`            | current directory         | no         | Last 500 sent requests + responses (capped 256 KB)|
+| File                      | Location                                        | Committed? | Contents                                          |
+|---------------------------|-------------------------------------------------|------------|---------------------------------------------------|
+| `lazypost-workspace.json` | current directory                               | yes        | Request tree (folders, methods, URLs, bodies)     |
+| `.env`                    | `~/.config/lazypost/env/{folder_name}/`         | —          | Environment variables (API keys, tokens, etc.)    |
+| `history.json`            | `~/.config/lazypost/env/{folder_name}/`         | —          | Last 500 sent requests + responses (capped 256 KB)|
 
 `lazypost-workspace.json` is safe to commit — it contains no secrets. Environment
-variables are stored outside the project tree entirely (`~/lazypost/env/` mirroring
-your working directory path), so they can never be accidentally committed.
+variables and history are stored outside the project tree entirely
+(`~/.config/lazypost/env/` mirroring your working directory name), so they can
+never be accidentally committed.
 
 ## Environment variables (`E`)
 
