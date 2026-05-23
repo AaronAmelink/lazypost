@@ -13,7 +13,11 @@ pub fn env_path_for_cwd() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."));
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let folder_name = cwd.file_name().unwrap_or(cwd.as_os_str());
-    home.join(".config").join("lazypost").join(".env").join(folder_name).join(".env.json")
+    home.join(".config")
+        .join("lazypost")
+        .join(".env")
+        .join(folder_name)
+        .join(".env.json")
 }
 
 /// Persistent store for environment variables. Lives in its own file
