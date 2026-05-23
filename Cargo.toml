@@ -2,10 +2,11 @@
 name = "lazypost"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "A keyboard-driven terminal HTTP client. Postman in a TUI."
 readme = "README.md"
-license = "MIT"
-repository = "https://github.com/aaron-amelink/lazypost"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/AaronAmelink/lazypost"
 keywords = ["tui", "http", "ratatui", "postman", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 

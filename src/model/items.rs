@@ -146,7 +146,7 @@ pub struct OAuth2Config {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refresh_token: Option<String>,
     /// Most recently fetched access token. Never persisted — runtime cache only,
-    /// because workspace.json is committed to git and tokens are secrets.
+    /// because lazypost-workspace.json is committed to git and tokens are secrets.
     #[serde(skip)]
     pub access_token: Option<String>,
 }

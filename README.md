@@ -1,8 +1,8 @@
 # lazypost
 
 [![Crates.io](https://img.shields.io/crates/v/lazypost)](https://crates.io/crates/lazypost)
-[![CI](https://github.com/aaron-amelink/lazypost/actions/workflows/ci.yml/badge.svg)](https://github.com/aaron-amelink/lazypost/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/AaronAmelink/lazypost/actions/workflows/ci.yml/badge.svg)](https://github.com/AaronAmelink/lazypost/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 A TUI HTTP client.
 
@@ -14,12 +14,12 @@ Requires Rust 1.85+ ([rustup](https://rustup.rs)).
 cargo install lazypost
 ```
 
-Or clone and build manually:
+Or clone and install manually:
 
 ```sh
-git clone https://github.com/aaron-amelink/lazypost
+git clone https://github.com/AaronAmelink/lazypost
 cd lazypost
-./install.sh
+cargo install --path .
 ```
 
 The binary lands in `~/.cargo/bin/lazypost`. Run `lazypost` from any project directory.
@@ -39,7 +39,7 @@ a set of example requests to get you started.
 ```
 n           open the "new request" modal
 e           edit the focused field; Esc to stop editing
-[ / ]       cycle sub-tabs (Info / Auth / Body / Params / Headers / Capture)
+[ / ]       cycle sub-tabs (Info / Auth / Body / Params / URL Vars / Headers / Capture)
 Enter       (in modal) confirm
 s           send the selected request
 w           save the editor's changes
@@ -88,9 +88,10 @@ Esc          cancel
 
 ## URL variables
 
-On the **URL Vars** tab, define key/value pairs and reference them in the URL
-as `<key>`. Whitespace inside the brackets is allowed (`< key >`). Values are
-URL-encoded when inserted. Missing or empty URL vars cause a request error.
+Write `<key>` anywhere in the URL. The **URL Vars** tab then appears, listing
+the keys derived from the URL with an editable value for each. Whitespace inside
+the brackets is allowed (`< key >`). Values are URL-encoded when inserted.
+Missing or empty URL vars cause a request error.
 
 ## Capture templates
 

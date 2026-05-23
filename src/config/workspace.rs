@@ -4,8 +4,9 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-/// On-disk format for `workspace.json`. Contains the request tree only.
-/// Environment variables live in `env.json` so secrets don't end up committed.
+/// On-disk format for `lazypost-workspace.json`. Contains the request tree only.
+/// Environment variables live in a separate `.env` file outside the project
+/// tree (`~/.config/lazypost/env/{folder}/.env`) so secrets don't end up committed.
 /// Unknown fields in older workspace files (e.g. legacy `environments`) are
 /// silently ignored by serde.
 #[derive(Serialize, Deserialize, Debug, Clone)]

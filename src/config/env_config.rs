@@ -21,10 +21,11 @@ pub fn env_path_for_cwd() -> PathBuf {
     project_dir_for_cwd().join(".env")
 }
 
-/// Persistent store for environment variables. Lives in its own file
-/// (default `env.json`) so it can be gitignored — values frequently contain
-/// secrets like API tokens that should never end up in a shared workspace
-/// file.
+/// Persistent store for environment variables. Lives in its own `.env` file
+/// outside the project tree (see `env_path_for_cwd`) so it can never be
+/// committed — values frequently contain secrets like API tokens that should
+/// never end up in a shared workspace file. The file is JSON-encoded and
+/// written with `0o600` permissions.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct EnvFile {
     #[serde(default)]
