@@ -75,23 +75,25 @@ impl EnvironmentEditor {
         }
     }
 
-    fn focus_list(&self) -> Vec<Focus> {
-        let mut out = Vec::with_capacity(self.var_rows.len() * 2);
-        for i in 0..self.var_rows.len() {
-            out.push(Focus::VarKey(i));
-            out.push(Focus::VarValue(i));
+    fn row_index(&self) -> usize {
+        match self.focused {
+            Focus::VarKey(i) | Focus::VarValue(i) => i,
         }
-        out
     }
 
-    fn move_focus(&mut self, delta: i32) {
-        let list = self.focus_list();
-        if list.is_empty() {
+    fn move_vertical(&mut self, delta: i32) {
+        let len = self.var_rows.len();
+        if len == 0 {
             return;
         }
-        let pos = list.iter().position(|f| *f == self.focused).unwrap_or(0) as i32;
-        let new_pos = (pos + delta).rem_euclid(list.len() as i32) as usize;
-        self.focused = list[new_pos];
+        let i = self.row_index() as i32 + delta;
+        if i < 0 || i >= len as i32 {
+            return;
+        }
+        self.focused = match self.focused {
+            Focus::VarKey(_) => Focus::VarKey(i as usize),
+            Focus::VarValue(_) => Focus::VarValue(i as usize),
+        };
     }
 
     pub fn handle_event(&mut self, event: &Event) {
@@ -122,8 +124,16 @@ impl EnvironmentEditor {
         }
 
         match key.code {
-            KeyCode::Char('j') | KeyCode::Down => self.move_focus(1),
-            KeyCode::Char('k') | KeyCode::Up => self.move_focus(-1),
+            KeyCode::Char('j') | KeyCode::Down => self.move_vertical(1),
+            KeyCode::Char('k') | KeyCode::Up => self.move_vertical(-1),
+            KeyCode::Char('h') | KeyCode::Left => {
+                let i = self.row_index();
+                self.focused = Focus::VarKey(i);
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                let i = self.row_index();
+                self.focused = Focus::VarValue(i);
+            }
             KeyCode::Char('e') => {
                 self.editing = true;
                 self.enable_focused();

@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::BufReader;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-/// Returns `~/lazypost/env/{cwd}/env.json`, falling back to `./env.json`.
+/// Returns `~/.config/lazypost/.env/{cwd_folder_name}/.env.json`.
 pub fn env_path_for_cwd() -> PathBuf {
     let home = std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."));
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let rel = cwd.strip_prefix("/").unwrap_or(&cwd);
-    home.join("lazypost").join("env").join(rel).join("env.json")
+    let folder_name = cwd.file_name().unwrap_or(cwd.as_os_str());
+    home.join(".config").join("lazypost").join(".env").join(folder_name).join(".env.json")
 }
 
 /// Persistent store for environment variables. Lives in its own file
@@ -55,6 +56,7 @@ impl EnvConfig {
             fs::create_dir_all(parent)?;
         }
         let json = serde_json::to_string_pretty(&self.data).map_err(std::io::Error::other)?;
-        fs::write(&self.path, json)
+        fs::write(&self.path, json)?;
+        fs::set_permissions(&self.path, fs::Permissions::from_mode(0o600))
     }
 }
